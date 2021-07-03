@@ -57,10 +57,22 @@ async function insertUserCategory(connection, userId, category) {
   return rows[0];
 }
 
+async function checkCategoryExists(connection, categoryId){
+  const query=`
+    select * from Category where categoryId=?;
+  `
+  const [rows] = await connection.query(
+      query,
+      [categoryId]
+  );
+  return rows;
+}
+
 
 module.exports = {
   getCategories,
   getUserCategories,
   deleteUserCategory,
-  insertUserCategory
+  insertUserCategory,
+  checkCategoryExists,
 };
