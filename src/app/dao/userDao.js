@@ -1,73 +1,51 @@
 const { pool } = require("../../../config/database");
 
-// Signup
-async function userEmailCheck(email) {
-  const connection = await pool.getConnection(async (conn) => conn);
-  const selectEmailQuery = `
-                SELECT email, nickname 
-                FROM UserInfo 
-                WHERE email = ?;
-                `;
-  const selectEmailParams = [email];
-  const [emailRows] = await connection.query(
-    selectEmailQuery,
-    selectEmailParams
+// 카카오 로그인 회원 여부 체크
+async function getUserByKakao(connection, kakaoId) {
+  const query = `
+    SELECT userId
+    FROM UserInfo
+    WHERE kakaoId = ? AND isDeleted='N';
+  `;
+  const params = [kakaoId];
+  const [rows] = await connection.query(
+    query,
+    params
   );
-  connection.release();
-
-  return emailRows;
+  return rows;
 }
 
-async function userNicknameCheck(nickname) {
-  const connection = await pool.getConnection(async (conn) => conn);
-  const selectNicknameQuery = `
-                SELECT email, nickname 
-                FROM UserInfo 
-                WHERE nickname = ?;
-                `;
-  const selectNicknameParams = [nickname];
-  const [nicknameRows] = await connection.query(
-    selectNicknameQuery,
-    selectNicknameParams
+// 카카오 회원가입
+async function insertUserInfoByKakao(connection, kakaoId, nickName) {
+  const query = `
+      INSERT INTO UserInfo(kakaoId, nickName)
+      VALUES (?, ?);
+  `;
+  const params = [kakaoId, nickName];
+  const rows = await connection.query(
+    query,
+    params
   );
-  connection.release();
-  return nicknameRows;
+  return rows[0];
 }
 
-async function insertUserInfo(insertUserInfoParams) {
-  const connection = await pool.getConnection(async (conn) => conn);
-  const insertUserInfoQuery = `
-        INSERT INTO UserInfo(email, pswd, nickname)
-        VALUES (?, ?, ?);
-    `;
-  const insertUserInfoRow = await connection.query(
-    insertUserInfoQuery,
-    insertUserInfoParams
+// 사용자 관심 카테고리 목록 추가
+async function insertUserCategory(connection, userId, category) {
+  const query = `
+      INSERT INTO UserCategory(userId, categoryId)
+      VALUES (?, ?);
+  `;
+  const params = [userId, category];
+  const rows = await connection.query(
+    query,
+    params
   );
-  connection.release();
-  return insertUserInfoRow;
+  return rows[0];
 }
 
-//SignIn
-async function selectUserInfo(email) {
-  const connection = await pool.getConnection(async (conn) => conn);
-  const selectUserInfoQuery = `
-                SELECT id, email , pswd, nickname, status 
-                FROM UserInfo 
-                WHERE email = ?;
-                `;
-
-  let selectUserInfoParams = [email];
-  const [userInfoRows] = await connection.query(
-    selectUserInfoQuery,
-    selectUserInfoParams
-  );
-  return [userInfoRows];
-}
 
 module.exports = {
-  userEmailCheck,
-  userNicknameCheck,
-  insertUserInfo,
-  selectUserInfo,
+  getUserByKakao,
+  insertUserInfoByKakao,
+  insertUserCategory
 };
