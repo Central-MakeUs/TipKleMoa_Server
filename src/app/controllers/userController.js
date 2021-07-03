@@ -27,25 +27,26 @@ exports.kakaoLogin = async function (req, res) {
 
     try {
         try {
-            kakaoInfo = await axios.get('https://kapi.kakao.com/v2/user/me', {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-        } catch (err) {
-            logger.error(`App - Kakao Login error\n: ${JSON.stringify(err)}`);
-            return res.json({isSuccess: false, code: 2003, message: "유효하지 않은 Access Token 입니다."});
-        }
+            try {
+                kakaoInfo = await axios.get('https://kapi.kakao.com/v2/user/me', {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+            } catch (err) {
+                logger.error(`App - Kakao Login error\n: ${JSON.stringify(err)}`);
+                return res.json({isSuccess: false, code: 2003, message: "유효하지 않은 Access Token 입니다."});
+            }
 
-        try {
             const connection = await pool.getConnection(async (conn) => conn);
-            const kakaoId = kakaoInfo.id;
+            const kakaoId = kakaoInfo.data.id;
             const [userByKakaoRows] = await userDao.getUserByKakao(connection, kakaoId);
             connection.release();
             if(userByKakaoRows == undefined) {
                 const result = {
-                    isMember : 'N',
+                    isMember: 'N',
+                    userId: 0,
                     jwt: null
                 }
 
@@ -71,7 +72,8 @@ exports.kakaoLogin = async function (req, res) {
                 });
 
                 const result = {
-                    isMember : 'Y',
+                    isMember: 'Y',
+                    userId: userId,
                     jwt: token
                 }
         
@@ -113,21 +115,27 @@ exports.kakaoSignUp = async function (req, res) {
 
     try {
         try {
-            kakaoInfo = await axios.get('https://kapi.kakao.com/v2/user/me', {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-        } catch (err) {
-            logger.error(`App - Kakao Login error\n: ${JSON.stringify(err)}`);
-            return res.json({isSuccess: false, code: 2003, message: "유효하지 않은 Access Token 입니다."});
-        }
-    
-        try {
+            try {
+                kakaoInfo = await axios.get('https://kapi.kakao.com/v2/user/me', {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+            } catch (err) {
+                logger.error(`App - Kakao Login error\n: ${JSON.stringify(err)}`);
+                return res.json({isSuccess: false, code: 2003, message: "유효하지 않은 Access Token 입니다."});
+            }
+
             const connection = await pool.getConnection(async (conn) => conn);
+            const kakaoId = kakaoInfo.data.id;
+            const [userByKakaoRows] = await userDao.getUserByKakao(connection, kakaoId);
+            if(userByKakaoRows != undefined) {
+                connection.release();
+                return res.json({isSuccess: false, code: 2014, message: "이미 가입된 회원입니다."});
+            }
+
             await connection.beginTransaction();
-            const kakaoId = kakaoInfo.id;
             // 회원 가입 (fcm 토큰 및 로그인 여부 갱신 코드 필요)
             const insertUserInfoByKakaoRow = await userDao.insertUserInfoByKakao(connection, kakaoId, nickName);
             userId = insertUserInfoByKakaoRow.insertId;
@@ -147,6 +155,7 @@ exports.kakaoSignUp = async function (req, res) {
             });
 
             const result = {
+                userId: userId,
                 jwt: token
             }
 
