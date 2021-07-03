@@ -12,7 +12,7 @@ async function getUserByKakao(connection, kakaoId) {
     query,
     params
   );
-  return [rows];
+  return rows;
 }
 
 // 카카오 회원가입
