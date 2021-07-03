@@ -9,172 +9,176 @@ const secret_config = require('../../../config/secret');
 const userDao = require('../dao/userDao');
 const { constants } = require('buffer');
 
+const axios = require('axios')
+
 /**
- update : 2020.10.4
- 01.signUp API = 회원가입
+ * API No. 1
+ * API Name : 카카오 로그인 검증 API
+ * [POST] /login/kakao
  */
-exports.signUp = async function (req, res) {
+exports.kakaoLogin = async function (req, res) {
     const {
-        email, password, nickname
+        accessToken
+        // , fcmToken
     } = req.body;
 
-    if (!email) return res.json({isSuccess: false, code: 301, message: "이메일을 입력해주세요."});
-    if (email.length > 30) return res.json({
-        isSuccess: false,
-        code: 302,
-        message: "이메일은 30자리 미만으로 입력해주세요."
-    });
+    if (!accessToken) return res.json({isSuccess: false, code: 2001, message: "Access Token을 입력해주세요."});
+    // if (!fcmToken) return res.json({isSuccess: false, code: 2002, message: "FCM 토큰을 입력해주세요."});
 
-    if (!regexEmail.test(email)) return res.json({isSuccess: false, code: 303, message: "이메일을 형식을 정확하게 입력해주세요."});
-
-    if (!password) return res.json({isSuccess: false, code: 304, message: "비밀번호를 입력 해주세요."});
-    if (password.length < 6 || password.length > 20) return res.json({
-        isSuccess: false,
-        code: 305,
-        message: "비밀번호는 6~20자리를 입력해주세요."
-    });
-
-    if (!nickname) return res.json({isSuccess: false, code: 306, message: "닉네임을 입력 해주세요."});
-    if (nickname.length > 20) return res.json({
-        isSuccess: false,
-        code: 307,
-        message: "닉네임은 최대 20자리를 입력해주세요."
-    });
+    try {
         try {
-            // 이메일 중복 확인
-            const emailRows = await userDao.userEmailCheck(email);
-            if (emailRows.length > 0) {
-
-                return res.json({
-                    isSuccess: false,
-                    code: 308,
-                    message: "중복된 이메일입니다."
-                });
-            }
-
-            // 닉네임 중복 확인
-            const nicknameRows = await userDao.userNicknameCheck(nickname);
-            if (nicknameRows.length > 0) {
-                return res.json({
-                    isSuccess: false,
-                    code: 309,
-                    message: "중복된 닉네임입니다."
-                });
-            }
-
-            // TRANSACTION : advanced
-           // await connection.beginTransaction(); // START TRANSACTION
-            const hashedPassword = await crypto.createHash('sha512').update(password).digest('hex');
-            const insertUserInfoParams = [email, hashedPassword, nickname];
-            
-            const insertUserRows = await userDao.insertUserInfo(insertUserInfoParams);
-
-          //  await connection.commit(); // COMMIT
-           // connection.release();
-            return res.json({
-                isSuccess: true,
-                code: 200,
-                message: "회원가입 성공"
+            kakaoInfo = await axios.get('https://kapi.kakao.com/v2/user/me', {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                }
             });
         } catch (err) {
-           // await connection.rollback(); // ROLLBACK
-           // connection.release();
-            logger.error(`App - SignUp Query error\n: ${err.message}`);
-            return res.status(500).send(`Error: ${err.message}`);
+            logger.error(`App - Kakao Login error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 2003, message: "유효하지 않은 Access Token 입니다."});
         }
-};
 
-/**
- update : 2020.10.4
- 02.signIn API = 로그인
- **/
-exports.signIn = async function (req, res) {
-    const {
-        email, password
-    } = req.body;
-
-    if (!email) return res.json({isSuccess: false, code: 301, message: "이메일을 입력해주세요."});
-    if (email.length > 30) return res.json({
-        isSuccess: false,
-        code: 302,
-        message: "이메일은 30자리 미만으로 입력해주세요."
-    });
-
-    if (!regexEmail.test(email)) return res.json({isSuccess: false, code: 303, message: "이메일을 형식을 정확하게 입력해주세요."});
-
-    if (!password) return res.json({isSuccess: false, code: 304, message: "비밀번호를 입력 해주세요."});
         try {
-            const [userInfoRows] = await userDao.selectUserInfo(email)
+            const connection = await pool.getConnection(async (conn) => conn);
+            const kakaoId = kakaoInfo.id;
+            const [userByKakaoRows] = await userDao.getUserByKakao(connection, kakaoId);
+            connection.release();
+            if(userByKakaoRows == undefined) {
+                const result = {
+                    isMember : 'N',
+                    jwt: null
+                }
 
-            if (userInfoRows.length < 1) {
-                connection.release();
                 return res.json({
-                    isSuccess: false,
-                    code: 310,
-                    message: "아이디를 확인해주세요."
-                });
-            }
+                    isSuccess: true,
+                    code: 1000,
+                    message: "비회원 카카오 로그인 검증 성공",
+                    result: result
+                })
+            } else {
+                const userId = userByKakaoRows.userId;
 
-            const hashedPassword = await crypto.createHash('sha512').update(password).digest('hex');
-            if (userInfoRows[0].pswd !== hashedPassword) {
-                connection.release();
-                return res.json({
-                    isSuccess: false,
-                    code: 311,
-                    message: "비밀번호를 확인해주세요."
-                });
-            }
-            if (userInfoRows[0].status === "INACTIVE") {
-                connection.release();
-                return res.json({
-                    isSuccess: false,
-                    code: 312,
-                    message: "비활성화 된 계정입니다. 고객센터에 문의해주세요."
-                });
-            } else if (userInfoRows[0].status === "DELETED") {
-                connection.release();
-                return res.json({
-                    isSuccess: false,
-                    code: 313,
-                    message: "탈퇴 된 계정입니다. 고객센터에 문의해주세요."
-                });
-            }
-            //토큰 생성
-            let token = await jwt.sign({
-                    id: userInfoRows[0].id,
-                }, // 토큰의 내용(payload)
-                secret_config.jwtsecret, // 비밀 키
+                // fcm 토큰 및 로그인 여부 갱신 코드 필요
+        
+                // 토큰 생성
+                const token = await jwt.sign({
+                    userId: userId,
+                },
+                secret_config.jwtsecret,
                 {
                     expiresIn: '365d',
-                    subject: 'userInfo',
-                } // 유효 시간은 365일
-            );
+                    subject: 'userId',
+                });
 
-            res.json({
-                userInfo: userInfoRows[0],
-                jwt: token,
-                isSuccess: true,
-                code: 200,
-                message: "로그인 성공"
-            });
-
-            connection.release();
+                const result = {
+                    isMember : 'Y',
+                    jwt: token
+                }
+        
+                return res.json({
+                    isSuccess: true,
+                    code: 1000,
+                    message: "회원 카카오 로그인 검증 성공",
+                    result: result
+                })
+            }
         } catch (err) {
-            logger.error(`App - SignIn Query error\n: ${JSON.stringify(err)}`);
             connection.release();
-            return false;
+            logger.error(`App - Kakao Login DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
         }
+    } catch (err) {
+        logger.error(`App - Kakao Login error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
 };
 
 /**
- update : 2019.09.23
- 03.check API = token 검증
- **/
+ * API No. 3
+ * API Name : 카카오 회원가입 API
+ * [POST] /signup/kakao
+ */
+exports.kakaoSignUp = async function (req, res) {
+    const {
+        accessToken
+        // , fcmToken
+        , nickName, category
+    } = req.body;
+
+    if (!accessToken) return res.json({isSuccess: false, code: 2001, message: "Access Token을 입력해주세요."});
+    // if (!fcmToken) return res.json({isSuccess: false, code: 2002, message: "FCM 토큰을 입력해주세요."});
+    if (!nickName) return res.json({isSuccess: false, code: 2004, message: "닉네임을 입력해주세요."});
+    if (category.length < 4) return res.json({isSuccess: false, code: 2005, message: "카테고리 개수를 4개 이상으로 선택해주세요."});
+    if (category.length > 6) return res.json({isSuccess: false, code: 2006, message: "카테고리 개수를 6개 이하로 선택해주세요."});
+
+    try {
+        try {
+            kakaoInfo = await axios.get('https://kapi.kakao.com/v2/user/me', {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+        } catch (err) {
+            logger.error(`App - Kakao Login error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 2003, message: "유효하지 않은 Access Token 입니다."});
+        }
+    
+        try {
+            const connection = await pool.getConnection(async (conn) => conn);
+            await connection.beginTransaction();
+            const kakaoId = kakaoInfo.id;
+            // 회원 가입 (fcm 토큰 및 로그인 여부 갱신 코드 필요)
+            const insertUserInfoByKakaoRow = await userDao.insertUserInfoByKakao(connection, kakaoId, nickName);
+            userId = insertUserInfoByKakaoRow.insertId;
+            let insertUserCategory;
+            for(let i=0; i<category.length; i++) {
+                insertUserCategory = await userDao.insertUserCategory(connection, userId, category[i]);
+            }
+
+            // 토큰 생성
+            const token = await jwt.sign({
+                userId: userId,
+            },
+            secret_config.jwtsecret,
+            {
+                expiresIn: '365d',
+                subject: 'userId',
+            });
+
+            const result = {
+                jwt: token
+            }
+
+            await connection.commit();
+            connection.release();
+            return res.json({
+                isSuccess: true,
+                code: 1000,
+                message: "카카오 회원가입 성공",
+                result: result
+            })
+        } catch (err) {
+            await connection.rollback();
+            connection.release();
+            logger.error(`App - Kakao SignUp DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - Kakao SignUp Query error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
+};
+
+/**
+ * API No. 4
+ * API Name : 자동 로그인 API
+ * [POST] /auto-login
+ */
 exports.check = async function (req, res) {
-    res.json({
+    return res.json({
         isSuccess: true,
-        code: 200,
-        message: "검증 성공",
-        info: req.verifiedToken
+        code: 1000,
+        message: "JWT 토큰 검증 성공",
     })
 };
