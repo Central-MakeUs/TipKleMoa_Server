@@ -73,19 +73,20 @@ async function getPosts(connection, categoryId, order) {
         getPostsQuery = `
             select postId,
                    userId,
+                   (select nickName from UserInfo where UserInfo.userId = Post.userId) as nickName,
                    (select levelImgUrl
                     from UserInfo
                              inner join Level on UserInfo.level = Level.level
-                    where UserInfo.userId = Post.userId)                       as profileImgUrl,
+                    where UserInfo.userId = Post.userId)                               as profileImgUrl,
                    whenText,
                    howText,
                    (case
                         when LENGTH(description) <= 20 then description
-                        else concat(substr(description, 1, 20), '...더보기') end) as description,
+                        else concat(substr(description, 1, 20), '...더보기') end)         as description,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
-                            1)                                                 as score,
+                            1)                                                         as score,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
-                            0)                                                 as star,
+                            0)                                                         as star,
                    (case
                         when timestampdiff(hour, createdAt, now()) <= 1 then '방금'
                         when timestampdiff(hour, createdAt, now()) <= 12
@@ -99,7 +100,7 @@ async function getPosts(connection, categoryId, order) {
                         when timestampdiff(month, createdAt, now()) > 12
                             then concat(timestampdiff(year, createdAt, now()), '년 전')
                        end
-                       )                                                       as createdAt
+                       )                                                               as createdAt
             from Post
             where categoryId = ?
               and Post.isDeleted = 'N'
@@ -109,19 +110,20 @@ async function getPosts(connection, categoryId, order) {
         getPostsQuery = `
             select postId,
                    userId,
+                   (select nickName from UserInfo where UserInfo.userId = Post.userId) as nickName,
                    (select levelImgUrl
                     from UserInfo
                              inner join Level on UserInfo.level = Level.level
-                    where UserInfo.userId = Post.userId)                       as profileImgUrl,
+                    where UserInfo.userId = Post.userId)                               as profileImgUrl,
                    whenText,
                    howText,
                    (case
                         when LENGTH(description) <= 20 then description
-                        else concat(substr(description, 1, 20), '...더보기') end) as description,
+                        else concat(substr(description, 1, 20), '...더보기') end)         as description,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
-                            1)                                                 as score,
+                            1)                                                         as score,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
-                            0)                                                 as star,
+                            0)                                                         as star,
                    (case
                         when timestampdiff(hour, createdAt, now()) <= 1 then '방금'
                         when timestampdiff(hour, createdAt, now()) <= 12
@@ -135,7 +137,7 @@ async function getPosts(connection, categoryId, order) {
                         when timestampdiff(month, createdAt, now()) > 12
                             then concat(timestampdiff(year, createdAt, now()), '년 전')
                        end
-                       )                                                       as createdAt
+                       )                                                               as createdAt
             from Post
             where categoryId = ?
               and Post.isDeleted = 'N'
@@ -161,19 +163,20 @@ async function searchPosts(connection, search, order) {
         searchQuery = `
             select postId,
                    userId,
+                   (select nickName from UserInfo where UserInfo.userId = Post.userId) as nickName,
                    (select levelImgUrl
                     from UserInfo
                              inner join Level on UserInfo.level = Level.level
-                    where UserInfo.userId = Post.userId)                       as profileImgUrl,
+                    where UserInfo.userId = Post.userId)                               as profileImgUrl,
                    whenText,
                    howText,
                    (case
                         when LENGTH(description) <= 20 then description
-                        else concat(substr(description, 1, 20), '...더보기') end) as description,
+                        else concat(substr(description, 1, 20), '...더보기') end)         as description,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
-                            1)                                                 as score,
+                            1)                                                         as score,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
-                            0)                                                 as star,
+                            0)                                                         as star,
                    (case
                         when timestampdiff(hour, createdAt, now()) <= 1 then '방금'
                         when timestampdiff(hour, createdAt, now()) <= 12
@@ -187,7 +190,7 @@ async function searchPosts(connection, search, order) {
                         when timestampdiff(month, createdAt, now()) > 12
                             then concat(timestampdiff(year, createdAt, now()), '년 전')
                        end
-                       )                                                       as createdAt
+                       )                                                               as createdAt
             from Post
             where Post.isDeleted = 'N'
               and (PostId in (select postId
@@ -201,19 +204,20 @@ async function searchPosts(connection, search, order) {
         searchQuery = `
             select postId,
                    userId,
+                   (select nickName from UserInfo where UserInfo.userId = Post.userId) as nickName,
                    (select levelImgUrl
                     from UserInfo
                              inner join Level on UserInfo.level = Level.level
-                    where UserInfo.userId = Post.userId)                       as profileImgUrl,
+                    where UserInfo.userId = Post.userId)                               as profileImgUrl,
                    whenText,
                    howText,
                    (case
                         when LENGTH(description) <= 20 then description
-                        else concat(substr(description, 1, 20), '...더보기') end) as description,
+                        else concat(substr(description, 1, 20), '...더보기') end)         as description,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
-                            1)                                                 as score,
+                            1)                                                         as score,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
-                            0)                                                 as star,
+                            0)                                                         as star,
                    (case
                         when timestampdiff(hour, createdAt, now()) <= 1 then '방금'
                         when timestampdiff(hour, createdAt, now()) <= 12
@@ -227,7 +231,7 @@ async function searchPosts(connection, search, order) {
                         when timestampdiff(month, createdAt, now()) > 12
                             then concat(timestampdiff(year, createdAt, now()), '년 전')
                        end
-                       )                                                       as createdAt
+                       )                                                               as createdAt
             from Post
             where Post.isDeleted = 'N'
               and (PostId in (select postId
@@ -265,10 +269,74 @@ async function getPostImages(connection, postId) {
     return Rows;
 }
 
+async function getPostDetail(connection, postId, userId) {
+    const getPostDeatilQuery = `
+        select postId,
+               userId,
+               (select nickName from UserInfo where UserInfo.userId = Post.userId) as nickName,
+               (select levelImgUrl
+                from UserInfo
+                         inner join Level on UserInfo.level = Level.level
+                where UserInfo.userId = Post.userId)                               as profileImgUrl,
+               whenText,
+               howText,
+               description,
+               truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
+                        1)                                                         as score,
+               truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
+                        0)                                                         as star,
+               (case
+                    when timestampdiff(hour, createdAt, now()) <= 1 then '방금'
+                    when timestampdiff(hour, createdAt, now()) <= 12
+                        then concat(timestampdiff(hour, createdAt, now()) <= 12, '시간 전')
+                    when timestampdiff(hour, createdAt, now()) <= 24 then '오늘'
+                    when timestampdiff(day, createdAt, now()) = 1 then '어제'
+                    when timestampdiff(day, createdAt, now()) <= 30
+                        then concat(timestampdiff(day, createdAt, now()), '일 전')
+                    when timestampdiff(month, createdAt, now()) < 12
+                        then concat(timestampdiff(month, createdAt, now()), '달 전')
+                    when timestampdiff(month, createdAt, now()) > 12
+                        then concat(timestampdiff(year, createdAt, now()), '년 전')
+                   end
+                   )                                                               as createdAt,
+               (select if(EXISTS(select * from PostStar where Post.postId = PostStar.postId and Post.userId = ?), 'Y',
+                          'N'))                                                    as isStarred,
+               (select if(EXISTS(select *
+                                 from FolderPost FP
+                                          inner join Folder F on F.folderId = FP.folderId
+                                 where userId = ?
+                                   and postId = Post.postId), 'Y',
+                          'N'))                                                    as isBookMarked,
+               (select COUNT(*) from Comment where Comment.postId = Post.postId)   as commentCount
+        from Post
+        where postId = ?;
+    `;
+    const [Rows] = await connection.query(
+        getPostDeatilQuery,
+        [userId, userId, postId]
+    );
+    return Rows;
+}
+
+async function checkPostExists(connection, postId) {
+    const query = `
+        select *
+        from Post
+        where postId = ?;
+    `
+    const [rows] = await connection.query(
+        query,
+        [postId]
+    );
+    return rows;
+}
+
 module.exports = {
     getBanners,
     getPreviews,
     getPosts,
     searchPosts,
     getPostImages,
+    checkPostExists,
+    getPostDetail,
 };

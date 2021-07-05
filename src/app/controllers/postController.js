@@ -175,6 +175,44 @@ exports.getPosts = async function (req, res) {
     }
 };
 
-exports.getPostDeatil = async function (req, res) {
+exports.getPostDetail = async function (req, res) {
+    try {
+        try {
+            const postId = req.params.postId;
+            const userId = req.verifiedToken.userId;
 
+            const connection = await pool.getConnection(async (conn) => conn);
+            const PostRows = await postDao.checkPostExists(connection, postId);
+            if (PostRows.length === 0) {
+                return res.json({
+                    isSuccess: false,
+                    code: 2008,
+                    message: "존재하지 않는 postId",
+                })
+            }
+
+            const postDetailRow = await postDao.getPostDetail(connection, postId, userId);
+            const imgRows = await postDao.getPostImages(connection, postDetailRow[0].postId)
+            const imgList = [];
+            for(let j=0; j<imgRows.length; j++){
+                imgList.push(imgRows[j].imgUrl);
+            }
+            postDetailRow[0].imgUrl = imgList;
+
+            connection.release();
+            return res.json({
+                isSuccess: true,
+                code: 1000,
+                message: "게시글 상세 조회 성공",
+                result: postDetailRow[0]
+            })
+        } catch (err) {
+            connection.release();
+            logger.error(`App - getPostDetail DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - getPostDetail error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
 };
