@@ -36,13 +36,13 @@ exports.getBanners = async function (req, res) {
     }
 };
 
-exports.getPreviews = async function (req, res){
+exports.getPreviews = async function (req, res) {
     try {
         try {
             const categoryId = req.params.categoryId;
             const {order} = req.query;
 
-            if (!categoryId){
+            if (!categoryId) {
                 return res.json({
                     isSuccess: false,
                     code: 2006,
@@ -52,7 +52,7 @@ exports.getPreviews = async function (req, res){
 
             const connection = await pool.getConnection(async (conn) => conn);
             const categoryRows = await categoryDao.checkCategoryExists(connection, categoryId);
-            if(categoryRows.length===0){
+            if (categoryRows.length === 0) {
                 return res.json({
                     isSuccess: false,
                     code: 2007,
@@ -62,14 +62,13 @@ exports.getPreviews = async function (req, res){
 
             const previewRows = await postDao.getPreviews(connection, categoryId, order);
             connection.release();
-            if (previewRows==null){
+            if (previewRows == null) {
                 return res.json({
                     isSuccess: false,
                     code: 2005,
                     message: "조회 기준이 잘못되었습니다.",
                 })
-            }
-            else{
+            } else {
                 return res.json({
                     isSuccess: true,
                     code: 1000,
@@ -86,4 +85,96 @@ exports.getPreviews = async function (req, res){
         logger.error(`App - getPreviews error\n: ${JSON.stringify(err)}`);
         return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
     }
+};
+
+exports.getPosts = async function (req, res) {
+    try {
+        try {
+            const {categoryId, order, search} = req.query;
+
+            if (!order) {
+                return res.json({
+                    isSuccess: false,
+                    code: 2012,
+                    message: "order를 입력해주세요",
+                })
+            }
+            if (!(order === 'recent' || order === 'popular')) {
+                return res.json({
+                    isSuccess: false,
+                    code: 2005,
+                    message: "조회 기준이 잘못되었습니다.",
+                })
+            }
+
+            const connection = await pool.getConnection(async (conn) => conn);
+            if (search) {
+                const searchRows = await postDao.searchPosts(connection, search, order);
+                for(let i=0; i<searchRows.length; i++){
+                    const imgRows = await postDao.getPostImages(connection, searchRows[i].postId)
+                    const imgList = [];
+                    for(let j=0; j<imgRows.length; j++){
+                        imgList.push(imgRows[j].imgUrl);
+                    }
+                    searchRows[i].imgUrl = imgList;
+                }
+
+                connection.release();
+                return res.json({
+                    isSuccess: true,
+                    code: 1000,
+                    message: "검색 결과 게시물 조회 성공",
+                    result: searchRows
+                })
+
+            } else if (categoryId) {
+                const categoryRows = await categoryDao.checkCategoryExists(connection, categoryId);
+                if (categoryRows.length === 0) {
+                    connection.release();
+                    return res.json({
+                        isSuccess: false,
+                        code: 2007,
+                        message: "존재하지 않는 categoryId",
+                    });
+                }
+
+                const postRows = await postDao.getPosts(connection, categoryId, order);
+                for(let i=0; i<postRows.length; i++){
+                    const imgRows = await postDao.getPostImages(connection, postRows[i].postId)
+                    const imgList = [];
+                    for(let j=0; j<imgRows.length; j++){
+                        imgList.push(imgRows[j].imgUrl);
+                    }
+                    postRows[i].imgUrl = imgList;
+                }
+
+                connection.release();
+                return res.json({
+                    isSuccess: true,
+                    code: 1000,
+                    message: "카테고리 게시물 조회 성공",
+                    result: postRows
+                });
+            } else {
+                connection.release();
+                return res.json({
+                    isSuccess: false,
+                    code: 2006,
+                    message: "categoryId 또는 search를 입력해주세요",
+                });
+            }
+
+        } catch (err) {
+            connection.release();
+            logger.error(`App - getPosts DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - getPosts error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
+};
+
+exports.getPostDeatil = async function (req, res) {
+
 };
