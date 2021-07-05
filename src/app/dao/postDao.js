@@ -8,6 +8,7 @@ async function getBanners(connection) {
                        where p.postId = i.postId
                        order by imgId limit 1),'') as thumbnailUrl
         from Post p
+        where p.isDeleted = 'N'
         order by (select count(*)
                   from PostHits h
                   where h.postId = p.postId) desc,
@@ -34,6 +35,7 @@ async function getPreviews(connection, categoryId, order) {
                            order by imgId limit 1),'') as thumbnailUrl
             from Post p
             where categoryId = ?
+              and p.isDeleted = 'N'
             order by createdAt desc limit 4;
         `
     } else if (order == 'popular') {
@@ -46,6 +48,7 @@ async function getPreviews(connection, categoryId, order) {
                            order by imgId limit 1),'') as thumbnailUrl
             from Post p
             where categoryId = ?
+              and p.isDeleted = 'N'
             order by (select count(*)
                       from PostHits h
                       where h.postId = p.postId) desc,
@@ -99,6 +102,7 @@ async function getPosts(connection, categoryId, order) {
                        )                                                       as createdAt
             from Post
             where categoryId = ?
+              and Post.isDeleted = 'N'
             order by Post.createdAt desc;
         `
     } else if (order == 'popular') {
@@ -134,6 +138,7 @@ async function getPosts(connection, categoryId, order) {
                        )                                                       as createdAt
             from Post
             where categoryId = ?
+              and Post.isDeleted = 'N'
             order by (select count(*)
                       from PostHits h
                       where h.postId = Post.postId) desc,
@@ -184,11 +189,12 @@ async function searchPosts(connection, search, order) {
                        end
                        )                                                       as createdAt
             from Post
-            where PostId in (select postId
-                             from PostImage
-                             where (imgText like concat('%', ?, '%')))
-               or (whenText like concat('%', ?, '%'))
-               or (howText like concat('%', ?, '%'))
+            where Post.isDeleted = 'N'
+              and (PostId in (select postId
+                              from PostImage
+                              where (imgText like concat('%', ?, '%')))
+                or (whenText like concat('%', ?, '%'))
+                or (howText like concat('%', ?, '%')))
             order by Post.createdAt desc;
         `
     } else if (order == 'popular') {
@@ -223,11 +229,12 @@ async function searchPosts(connection, search, order) {
                        end
                        )                                                       as createdAt
             from Post
-            where PostId in (select postId
-                             from PostImage
-                             where (imgText like concat('%', ?, '%')))
-               or (whenText like concat('%', ?, '%'))
-               or (howText like concat('%', ?, '%'))
+            where Post.isDeleted = 'N'
+              and (PostId in (select postId
+                              from PostImage
+                              where (imgText like concat('%', ?, '%')))
+                or (whenText like concat('%', ?, '%'))
+                or (howText like concat('%', ?, '%')))
             order by (select count(*)
                       from PostHits h
                       where h.postId = Post.postId) desc,
