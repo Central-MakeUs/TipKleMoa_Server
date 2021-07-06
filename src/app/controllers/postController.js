@@ -3,6 +3,7 @@ const {logger} = require('../../../config/winston');
 
 const postDao = require('../dao/postDao');
 const categoryDao = require('../dao/categoryDao');
+const searchDao = require('../dao/searchDao');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const secret_config = require('../../../config/secret');
@@ -91,6 +92,7 @@ exports.getPosts = async function (req, res) {
     try {
         try {
             const {categoryId, order, search} = req.query;
+            const userId = req.verifiedToken.userId;
 
             if (!order) {
                 return res.json({
@@ -119,7 +121,9 @@ exports.getPosts = async function (req, res) {
                     searchRows[i].imgUrl = imgList;
                 }
 
+                await searchDao.insertSearchKeyword(connection, userId, search);
                 connection.release();
+
                 return res.json({
                     isSuccess: true,
                     code: 1000,
