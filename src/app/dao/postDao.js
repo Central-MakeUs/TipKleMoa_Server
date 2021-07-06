@@ -81,6 +81,7 @@ async function getPosts(connection, categoryId, order) {
                    whenText,
                    howText,
                    (case
+                        when isnull(description) then ''
                         when LENGTH(description) <= 20 then description
                         else concat(substr(description, 1, 20), '...더보기') end)         as description,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
@@ -118,6 +119,7 @@ async function getPosts(connection, categoryId, order) {
                    whenText,
                    howText,
                    (case
+                        when isnull(description) then ''
                         when LENGTH(description) <= 20 then description
                         else concat(substr(description, 1, 20), '...더보기') end)         as description,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
@@ -171,6 +173,7 @@ async function searchPosts(connection, search, order) {
                    whenText,
                    howText,
                    (case
+                        when isnull(description) then ''
                         when LENGTH(description) <= 20 then description
                         else concat(substr(description, 1, 20), '...더보기') end)         as description,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
@@ -212,6 +215,7 @@ async function searchPosts(connection, search, order) {
                    whenText,
                    howText,
                    (case
+                        when isnull(description) then ''
                         when LENGTH(description) <= 20 then description
                         else concat(substr(description, 1, 20), '...더보기') end)         as description,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
@@ -280,25 +284,11 @@ async function getPostDetail(connection, postId, userId) {
                 where UserInfo.userId = Post.userId)                               as profileImgUrl,
                whenText,
                howText,
-               description,
+               ifnull(description, '') as description,
                truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
                         1)                                                         as score,
                truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
                         0)                                                         as star,
-               (case
-                    when timestampdiff(hour, createdAt, now()) <= 1 then '방금'
-                    when timestampdiff(hour, createdAt, now()) <= 12
-                        then concat(timestampdiff(hour, createdAt, now()) <= 12, '시간 전')
-                    when timestampdiff(hour, createdAt, now()) <= 24 then '오늘'
-                    when timestampdiff(day, createdAt, now()) = 1 then '어제'
-                    when timestampdiff(day, createdAt, now()) <= 30
-                        then concat(timestampdiff(day, createdAt, now()), '일 전')
-                    when timestampdiff(month, createdAt, now()) < 12
-                        then concat(timestampdiff(month, createdAt, now()), '달 전')
-                    when timestampdiff(month, createdAt, now()) > 12
-                        then concat(timestampdiff(year, createdAt, now()), '년 전')
-                   end
-                   )                                                               as createdAt,
                (select if(EXISTS(select * from PostStar where Post.postId = PostStar.postId and Post.userId = ?), 'Y',
                           'N'))                                                    as isStarred,
                (select if(EXISTS(select *
