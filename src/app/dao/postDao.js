@@ -86,8 +86,8 @@ async function getPosts(connection, categoryId, order) {
                         else concat(substr(description, 1, 20), '...더보기') end)         as description,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
                             1)                                                         as score,
-                   truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
-                            0)                                                         as star,
+                   cast((truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
+                                  0)) as unsigned)                                     as star,
                    (case
                         when timestampdiff(hour, createdAt, now()) <= 1 then '방금'
                         when timestampdiff(hour, createdAt, now()) <= 12
@@ -124,8 +124,8 @@ async function getPosts(connection, categoryId, order) {
                         else concat(substr(description, 1, 20), '...더보기') end)         as description,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
                             1)                                                         as score,
-                   truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
-                            0)                                                         as star,
+                   cast((truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
+                                  0)) as unsigned)                                     as star,
                    (case
                         when timestampdiff(hour, createdAt, now()) <= 1 then '방금'
                         when timestampdiff(hour, createdAt, now()) <= 12
@@ -178,8 +178,8 @@ async function searchPosts(connection, search, order) {
                         else concat(substr(description, 1, 20), '...더보기') end)         as description,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
                             1)                                                         as score,
-                   truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
-                            0)                                                         as star,
+                   cast((truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
+                                  0)) as unsigned)                                     as star,
                    (case
                         when timestampdiff(hour, createdAt, now()) <= 1 then '방금'
                         when timestampdiff(hour, createdAt, now()) <= 12
@@ -220,8 +220,8 @@ async function searchPosts(connection, search, order) {
                         else concat(substr(description, 1, 20), '...더보기') end)         as description,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
                             1)                                                         as score,
-                   truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
-                            0)                                                         as star,
+                   cast((truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
+                                  0)) as unsigned)                                     as star,
                    (case
                         when timestampdiff(hour, createdAt, now()) <= 1 then '방금'
                         when timestampdiff(hour, createdAt, now()) <= 12
@@ -287,8 +287,8 @@ async function getPostDetail(connection, postId, userId) {
                ifnull(description, '') as description,
                truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
                         1)                                                         as score,
-               truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
-                        0)                                                         as star,
+               cast((truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
+                              0)) as unsigned)                                     as star,
                (select if(EXISTS(select * from PostStar where Post.postId = PostStar.postId and Post.userId = ?), 'Y',
                           'N'))                                                    as isStarred,
                (select if(EXISTS(select *
