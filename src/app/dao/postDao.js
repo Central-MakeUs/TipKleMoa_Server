@@ -312,7 +312,7 @@ async function checkPostExists(connection, postId) {
     const query = `
         select *
         from Post
-        where postId = ?;
+        where postId = ? and Post.isDeleted='N';
     `
     const [rows] = await connection.query(
         query,
