@@ -43,7 +43,8 @@ async function insertSearchKeyword(connection, userId, keyword) {
     const deleteQuery = `
         update SearchKeyword
         set isDeleted='Y'
-        where searchId = ?;
+        where userId = ?
+          and keyword = ?;
     `
     const insertQuery = `
         insert into SearchKeyword (userId, keyword)
@@ -55,10 +56,9 @@ async function insertSearchKeyword(connection, userId, keyword) {
         [userId, keyword]
     );
     if (rows.length >= 1) {
-        const searchId = rows[0].searchId;
         const [deleteRows] = await connection.query(
             deleteQuery,
-            [searchId]
+            [userId, keyword]
         );
     }
     const [insertRows] = await connection.query(
