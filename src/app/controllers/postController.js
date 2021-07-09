@@ -195,6 +195,8 @@ exports.getPostDetail = async function (req, res) {
                 })
             }
 
+            await postDao.addPostHits(connection, userId, postId);
+
             const postDetailRow = await postDao.getPostDetail(connection, postId, userId);
             const imgRows = await postDao.getPostImages(connection, postDetailRow[0].postId)
             const imgList = [];

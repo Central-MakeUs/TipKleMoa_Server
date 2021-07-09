@@ -282,7 +282,7 @@ async function getPostDetail(connection, postId, userId) {
                 where UserInfo.userId = Post.userId)                               as profileImgUrl,
                whenText,
                howText,
-               ifnull(description, '') as description,
+               ifnull(description, '')                                             as description,
                truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
                         1)                                                         as score,
                cast((truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
@@ -303,6 +303,32 @@ async function getPostDetail(connection, postId, userId) {
         getPostDeatilQuery,
         [userId, userId, postId]
     );
+    return Rows;
+}
+
+async function addPostHits(connection, userId, postId) {
+    const checkQuery = `
+        select *
+        from PostHits
+        where userId = ?
+          and postId = ?;
+    `
+    const [Rows] = await connection.query(
+        checkQuery,
+        [userId, postId]
+    );
+
+    if (Rows.length == 0) {
+        const addQuery = `
+            insert into PostHits (userId, postId)
+            values (?, ?);
+        `
+        await connection.query(
+            addQuery,
+            [userId, postId]
+        );
+    }
+
     return Rows;
 }
 
@@ -327,4 +353,5 @@ module.exports = {
     getPostImages,
     checkPostExists,
     getPostDetail,
+    addPostHits,
 };
