@@ -57,13 +57,13 @@ async function insertUserCategory(connection, userId, category) {
   return rows[0];
 }
 
-async function checkCategoryExists(connection, categoryId){
+async function checkCategoryExists(connection, categoryName){
   const query=`
-    select * from Category where categoryId=?;
+    select * from Category where categoryName=?;
   `
   const [rows] = await connection.query(
       query,
-      [categoryId]
+      [categoryName]
   );
   return rows;
 }

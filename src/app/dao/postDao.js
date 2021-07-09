@@ -23,7 +23,7 @@ async function getBanners(connection) {
 }
 
 // 미리보기 조회
-async function getPreviews(connection, categoryId, order) {
+async function getPreviews(connection, categoryName, order) {
     let getPreviewsQuery;
     if (order == 'recent') {
         getPreviewsQuery = `
@@ -34,8 +34,7 @@ async function getPreviews(connection, categoryId, order) {
                            where p.postId = i.postId
                            order by imgId limit 1),'') as thumbnailUrl
             from Post p
-            where categoryId = ?
-              and p.isDeleted = 'N'
+            where categoryId = (select categoryId from Category where categoryName = ?)
             order by createdAt desc limit 4;
         `
     } else if (order == 'popular') {
@@ -45,10 +44,9 @@ async function getPreviews(connection, categoryId, order) {
                    ifnull((select imgUrl
                            from PostImage i
                            where p.postId = i.postId
-                           order by imgId limit 1),'') as thumbnailUrl
+                           order by imgId limit 1), '') as thumbnailUrl
             from Post p
-            where categoryId = ?
-              and p.isDeleted = 'N'
+            where categoryId = (select categoryId from Category where categoryName = ?)
             order by (select count(*)
                       from PostHits h
                       where h.postId = p.postId) desc,
@@ -62,12 +60,12 @@ async function getPreviews(connection, categoryId, order) {
 
     const [Rows] = await connection.query(
         getPreviewsQuery,
-        [categoryId]
+        [categoryName]
     );
     return Rows;
 }
 
-async function getPosts(connection, categoryId, order) {
+async function getPosts(connection, categoryName, order) {
     let getPostsQuery;
     if (order == 'recent') {
         getPostsQuery = `
@@ -103,7 +101,7 @@ async function getPosts(connection, categoryId, order) {
                        end
                        )                                                               as createdAt
             from Post
-            where categoryId = ?
+            where categoryId = (select categoryId from Category where categoryName=?)
               and Post.isDeleted = 'N'
             order by Post.createdAt desc;
         `
@@ -141,7 +139,7 @@ async function getPosts(connection, categoryId, order) {
                        end
                        )                                                               as createdAt
             from Post
-            where categoryId = ?
+            where categoryId = (select categoryId from Category where categoryName=?)
               and Post.isDeleted = 'N'
             order by (select count(*)
                       from PostHits h
@@ -154,7 +152,7 @@ async function getPosts(connection, categoryId, order) {
 
     const [Rows] = await connection.query(
         getPostsQuery,
-        [categoryId]
+        [categoryName]
     );
     return Rows;
 }

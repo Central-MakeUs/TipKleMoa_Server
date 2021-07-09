@@ -40,28 +40,28 @@ exports.getBanners = async function (req, res) {
 exports.getPreviews = async function (req, res) {
     try {
         try {
-            const categoryId = req.params.categoryId;
+            const categoryName = req.params.categoryName;
             const {order} = req.query;
 
-            if (!categoryId) {
+            if (!categoryName) {
                 return res.json({
                     isSuccess: false,
                     code: 2006,
-                    message: "categoryId를 입력해주세요",
+                    message: "categoryName을 입력해주세요",
                 })
             }
 
             const connection = await pool.getConnection(async (conn) => conn);
-            const categoryRows = await categoryDao.checkCategoryExists(connection, categoryId);
+            const categoryRows = await categoryDao.checkCategoryExists(connection, categoryName);
             if (categoryRows.length === 0) {
                 return res.json({
                     isSuccess: false,
                     code: 2007,
-                    message: "존재하지 않는 categoryId",
+                    message: "존재하지 않는 category",
                 })
             }
 
-            const previewRows = await postDao.getPreviews(connection, categoryId, order);
+            const previewRows = await postDao.getPreviews(connection, categoryName, order);
             connection.release();
             if (previewRows == null) {
                 return res.json({
@@ -91,7 +91,7 @@ exports.getPreviews = async function (req, res) {
 exports.getPosts = async function (req, res) {
     try {
         try {
-            const {categoryId, order, search} = req.query;
+            const {categoryName, order, search} = req.query;
             const userId = req.verifiedToken.userId;
 
             if (!order) {
@@ -131,8 +131,8 @@ exports.getPosts = async function (req, res) {
                     result: searchRows
                 })
 
-            } else if (categoryId) {
-                const categoryRows = await categoryDao.checkCategoryExists(connection, categoryId);
+            } else if (categoryName) {
+                const categoryRows = await categoryDao.checkCategoryExists(connection, categoryName);
                 if (categoryRows.length === 0) {
                     connection.release();
                     return res.json({
@@ -142,7 +142,7 @@ exports.getPosts = async function (req, res) {
                     });
                 }
 
-                const postRows = await postDao.getPosts(connection, categoryId, order);
+                const postRows = await postDao.getPosts(connection, categoryName, order);
                 for(let i=0; i<postRows.length; i++){
                     const imgRows = await postDao.getPostImages(connection, postRows[i].postId)
                     const imgList = [];
@@ -164,7 +164,7 @@ exports.getPosts = async function (req, res) {
                 return res.json({
                     isSuccess: false,
                     code: 2006,
-                    message: "categoryId 또는 search를 입력해주세요",
+                    message: "categoryName 또는 search를 입력해주세요",
                 });
             }
 
