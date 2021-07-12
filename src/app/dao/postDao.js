@@ -345,6 +345,35 @@ async function checkPostExists(connection, postId) {
     return rows;
 }
 
+// 게시글 등록
+async function insertPost(connection, userId, category, whenText, howText, description) {
+  const query = `
+      INSERT INTO Post(categoryId, userId, whenText, howText, description)
+      VALUES (?, ?, ?, ?, ?);
+  `;
+  const params = [category, userId, whenText, howText, description];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
+// 이미지 URL 등록
+async function insertImgUrl(connection, postId, imgUrl, imgText) {
+  const query = `
+      INSERT INTO PostImage(postId, imgUrl, imgText)
+      VALUES (?, ?, ?);
+  `;
+  const params = [postId, imgUrl, imgText];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
+
 module.exports = {
     getBanners,
     getPreviews,
@@ -354,4 +383,6 @@ module.exports = {
     checkPostExists,
     getPostDetail,
     addPostHits,
+    insertPost,
+    insertImgUrl
 };
