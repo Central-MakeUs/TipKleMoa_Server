@@ -4,9 +4,12 @@ const {logger} = require('../../../config/winston');
 const postDao = require('../dao/postDao');
 const categoryDao = require('../dao/categoryDao');
 const searchDao = require('../dao/searchDao');
+const pointDao = require('../dao/pointDao');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const secret_config = require('../../../config/secret');
+
+const regUrlType = /(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
 
 
 /**
@@ -242,6 +245,66 @@ exports.getPostDetail = async function (req, res) {
         }
     } catch (err) {
         logger.error(`App - getPostDetail error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
+};
+
+/**
+ * API No. 12
+ * API Name : 게시글 등록 API
+ * [POST] /posts
+ */
+ exports.insertPost = async function (req, res) {
+    try {
+        try {
+            const userId = req.verifiedToken.userId;
+            const {
+                category, whenText, howText, description, img
+            } = req.body;
+
+            if (!category) return res.json({isSuccess: false, code: 2020, message: "카테고리를 입력해주세요."});
+            if (!whenText) return res.json({isSuccess: false, code: 2021, message: "when을 입력해주세요."});
+            if (!howText) return res.json({isSuccess: false, code: 2022, message: "how를 입력해주세요."});
+            if (img < 1) return res.json({isSuccess: false, code: 2024, message: "이미지 URL을 입력해주세요."});
+            if (img > 5) return res.json({isSuccess: false, code: 2025, message: "이미지 URL을 5개 이하로 입력해주세요."});
+
+            for(let i=0; i<img.length; i++) {
+                if (!regUrlType.test(img[i][0])) return res.json({
+                    isSuccess: false,
+                    code: 2026,
+                    message: "이미지 URL 형식이 잘못되었습니다."
+                });
+            }
+
+            const connection = await pool.getConnection(async (conn) => conn);
+            await connection.beginTransaction();
+            const insertPostRow = await postDao.insertPost(connection, userId, category, whenText, howText, description);
+
+            postId = insertPostRow.insertId;
+            let insertImgUrl;
+            for(let i=0; i<img.length; i++) {
+                insertImgUrl = await postDao.insertImgUrl(connection, postId, img[i][0], img[i][1]);
+            }
+
+            // 포인트 적용
+            const insertPointRow = await pointDao.insertPoint(connection, userId, 10, "updatePost");
+
+            await connection.commit();
+            connection.release();
+            return res.json({
+                isSuccess: true,
+                code: 1000,
+                message: "게시글 등록 성공",
+                result: {postId: postId}
+            })
+        } catch (err) {
+            await connection.rollback();
+            connection.release();
+            logger.error(`App - insertPost DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - insertPost Query error\n: ${JSON.stringify(err)}`);
         return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
     }
 };
