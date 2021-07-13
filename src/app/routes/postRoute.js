@@ -5,5 +5,6 @@ module.exports = function(app){
     app.get('/banners', jwtMiddleware, post.getBanners);
     app.get('/categories/:categoryName/tips', jwtMiddleware, post.getPreviews);
     app.get('/posts', jwtMiddleware, post.getPosts);
+    app.post('/posts', jwtMiddleware, post.insertPost);
     app.get('/posts/:postId', jwtMiddleware, post.getPostDetail);
 };
