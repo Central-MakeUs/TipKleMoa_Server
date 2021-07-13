@@ -91,7 +91,7 @@ exports.getPreviews = async function (req, res) {
 exports.getPosts = async function (req, res) {
     try {
         try {
-            const {categoryName, order, search} = req.query;
+            const {categoryName, order, search, offset, limit} = req.query;
             const userId = req.verifiedToken.userId;
 
             if (!order) {
@@ -108,10 +108,33 @@ exports.getPosts = async function (req, res) {
                     message: "조회 기준이 잘못되었습니다.",
                 })
             }
+            if(!offset){
+                return res.json({
+                    isSuccess: false,
+                    code: 2005,
+                    message: "offset을 입력해주세요.",
+                })
+            }
+            if(!limit){
+                return res.json({
+                    isSuccess: false,
+                    code: 2005,
+                    message: "limit을 입력해주세요.",
+                })
+            }
+
+            const checkNumValid = /^\d+$/;
+            if(!checkNumValid.test(offset) || !checkNumValid.test(limit)){
+                return res.json({
+                    isSuccess: false,
+                    code: 2005,
+                    message: "offset, limit은 숫자로 입력해주세요.",
+                })
+            }
 
             const connection = await pool.getConnection(async (conn) => conn);
             if (search) {
-                const searchRows = await postDao.searchPosts(connection, search, order);
+                const searchRows = await postDao.searchPosts(connection, search, order, Number(offset), Number(limit));
                 for(let i=0; i<searchRows.length; i++){
                     const imgRows = await postDao.getPostImages(connection, searchRows[i].postId)
                     const imgList = [];
@@ -127,7 +150,7 @@ exports.getPosts = async function (req, res) {
                 return res.json({
                     isSuccess: true,
                     code: 1000,
-                    message: "검색 결과 게시물 조회 성공",
+                    message: "검색 결과 게시물 조회 성공 - 시작인덱스 : " + offset + " 읽은 개수 : " + limit,
                     result: searchRows
                 })
 
@@ -142,7 +165,7 @@ exports.getPosts = async function (req, res) {
                     });
                 }
 
-                const postRows = await postDao.getPosts(connection, categoryName, order);
+                const postRows = await postDao.getPosts(connection, categoryName, order, Number(offset), Number(limit));
                 for(let i=0; i<postRows.length; i++){
                     const imgRows = await postDao.getPostImages(connection, postRows[i].postId)
                     const imgList = [];
@@ -156,7 +179,7 @@ exports.getPosts = async function (req, res) {
                 return res.json({
                     isSuccess: true,
                     code: 1000,
-                    message: "카테고리 게시물 조회 성공",
+                    message: "카테고리 게시물 조회 성공 - 시작인덱스 : " + offset + " 읽은 개수 : " + limit,
                     result: postRows
                 });
             } else {
