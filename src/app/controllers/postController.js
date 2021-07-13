@@ -272,6 +272,7 @@ exports.getPostDetail = async function (req, res) {
                 isSuccess: true,
                 code: 1000,
                 message: "게시글 등록 성공",
+                result: {postId: postId}
             })
         } catch (err) {
             await connection.rollback();
