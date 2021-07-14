@@ -114,14 +114,14 @@ exports.getPosts = async function (req, res) {
             if(!page){
                 return res.json({
                     isSuccess: false,
-                    code: 2005,
+                    code: 2030,
                     message: "page를 입력해주세요.",
                 })
             }
             if(!limit){
                 return res.json({
                     isSuccess: false,
-                    code: 2005,
+                    code: 2031,
                     message: "limit을 입력해주세요.",
                 })
             }
@@ -130,7 +130,7 @@ exports.getPosts = async function (req, res) {
             if(!checkNumValid.test(page) || !checkNumValid.test(limit)){
                 return res.json({
                     isSuccess: false,
-                    code: 2005,
+                    code: 2032,
                     message: "page, limit은 숫자로 입력해주세요(1 이상)",
                 })
             }
