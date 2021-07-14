@@ -242,7 +242,7 @@ exports.getPostDetail = async function (req, res) {
             if (!category) return res.json({isSuccess: false, code: 2020, message: "카테고리를 입력해주세요."});
             if (!whenText) return res.json({isSuccess: false, code: 2021, message: "when을 입력해주세요."});
             if (!howText) return res.json({isSuccess: false, code: 2022, message: "how를 입력해주세요."});
-            if (img < 1) return res.json({isSuccess: false, code: 2024, message: "이미지 URL을 입력해주세요."});
+            if (!img || img < 1) return res.json({isSuccess: false, code: 2024, message: "이미지 URL을 입력해주세요."});
             if (img > 5) return res.json({isSuccess: false, code: 2025, message: "이미지 URL을 5개 이하로 입력해주세요."});
 
             for(let i=0; i<img.length; i++) {
