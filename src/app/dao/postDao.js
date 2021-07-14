@@ -65,7 +65,7 @@ async function getPreviews(connection, categoryName, order) {
     return Rows;
 }
 
-async function getPosts(connection, categoryName, order, offset, limit) {
+async function getPosts(connection, categoryName, order, page, limit) {
     let getPostsQuery;
     if (order == 'recent') {
         getPostsQuery = `
@@ -153,12 +153,12 @@ async function getPosts(connection, categoryName, order, offset, limit) {
 
     const [Rows] = await connection.query(
         getPostsQuery,
-        [categoryName, offset, limit]
+        [categoryName, page, limit]
     );
     return Rows;
 }
 
-async function searchPosts(connection, search, order, offset, limit) {
+async function searchPosts(connection, search, order, page, limit) {
     let searchQuery;
     if (order == 'recent') {
         searchQuery = `
@@ -253,7 +253,7 @@ async function searchPosts(connection, search, order, offset, limit) {
 
     const [Rows] = await connection.query(
         searchQuery,
-        [search, search, search, offset, limit]
+        [search, search, search, page, limit]
     );
     return Rows;
 }
