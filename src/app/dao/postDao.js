@@ -65,7 +65,7 @@ async function getPreviews(connection, categoryName, order) {
     return Rows;
 }
 
-async function getPosts(connection, categoryName, order) {
+async function getPosts(connection, categoryName, order, page, limit) {
     let getPostsQuery;
     if (order == 'recent') {
         getPostsQuery = `
@@ -103,7 +103,7 @@ async function getPosts(connection, categoryName, order) {
             from Post
             where categoryId = (select categoryId from Category where categoryName=?)
               and Post.isDeleted = 'N'
-            order by Post.createdAt desc;
+            order by Post.createdAt desc, Post.postId desc limit ?, ?;
         `
     } else if (order == 'popular') {
         getPostsQuery = `
@@ -146,18 +146,19 @@ async function getPosts(connection, categoryName, order) {
                       where h.postId = Post.postId) desc,
                      (select avg(score) from PostStar s where s.postId = Post.postId) desc,
                      (select count(*) from PostStar s where s.postId = Post.postId) desc,
-                     (select count(*) from Comment c where c.postId = Post.postId) desc;
+                     (select count(*) from Comment c where c.postId = Post.postId) desc,
+                     Post.createdAt desc, Post.postId desc limit ?, ?;
         `
     }
 
     const [Rows] = await connection.query(
         getPostsQuery,
-        [categoryName]
+        [categoryName, page, limit]
     );
     return Rows;
 }
 
-async function searchPosts(connection, search, order) {
+async function searchPosts(connection, search, order, page, limit) {
     let searchQuery;
     if (order == 'recent') {
         searchQuery = `
@@ -199,8 +200,7 @@ async function searchPosts(connection, search, order) {
                               where (imgText like concat('%', ?, '%')))
                 or (whenText like concat('%', ?, '%'))
                 or (howText like concat('%', ?, '%')))
-            order by Post.createdAt desc;
-        `
+            order by Post.createdAt desc, postId desc limit ?, ?;`
     } else if (order == 'popular') {
         searchQuery = `
             select postId,
@@ -246,13 +246,14 @@ async function searchPosts(connection, search, order) {
                       where h.postId = Post.postId) desc,
                      (select avg(score) from PostStar s where s.postId = Post.postId) desc,
                      (select count(*) from PostStar s where s.postId = Post.postId) desc,
-                     (select count(*) from Comment c where c.postId = Post.postId) desc;
+                     (select count(*) from Comment c where c.postId = Post.postId) desc,
+                     createdAt desc, postId desc limit ?, ?;
         `
     }
 
     const [Rows] = await connection.query(
         searchQuery,
-        [search, search, search]
+        [search, search, search, page, limit]
     );
     return Rows;
 }
@@ -373,6 +374,20 @@ async function insertImgUrl(connection, postId, imgUrl, imgText) {
   return rows[0];
 }
 
+// 게시글 신고
+async function insertReport(connection, userId, postId, reason) {
+  const query = `
+      INSERT INTO ReportedPost(userId, postId, reason)
+      VALUES (?, ?, ?);
+  `;
+  const params = [userId, postId, reason];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
 async function checkPostAuthor(connection, postId, userId) {
     const query = `
         select *
@@ -411,6 +426,7 @@ module.exports = {
     addPostHits,
     insertPost,
     insertImgUrl,
+    insertReport,
     checkPostAuthor,
     deletePosts,
 };

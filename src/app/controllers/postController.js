@@ -94,7 +94,7 @@ exports.getPreviews = async function (req, res) {
 exports.getPosts = async function (req, res) {
     try {
         try {
-            const {categoryName, order, search} = req.query;
+            const {categoryName, order, search, page, limit} = req.query;
             const userId = req.verifiedToken.userId;
 
             if (!order) {
@@ -111,10 +111,33 @@ exports.getPosts = async function (req, res) {
                     message: "조회 기준이 잘못되었습니다.",
                 })
             }
+            if(!page){
+                return res.json({
+                    isSuccess: false,
+                    code: 2030,
+                    message: "page를 입력해주세요.",
+                })
+            }
+            if(!limit){
+                return res.json({
+                    isSuccess: false,
+                    code: 2031,
+                    message: "limit을 입력해주세요.",
+                })
+            }
+
+            const checkNumValid = /^([1-9])+$/;
+            if(!checkNumValid.test(page) || !checkNumValid.test(limit)){
+                return res.json({
+                    isSuccess: false,
+                    code: 2032,
+                    message: "page, limit은 숫자로 입력해주세요(1 이상)",
+                })
+            }
 
             const connection = await pool.getConnection(async (conn) => conn);
             if (search) {
-                const searchRows = await postDao.searchPosts(connection, search, order);
+                const searchRows = await postDao.searchPosts(connection, search, order, Number(limit)*(Number(page)-1), Number(limit));
                 for(let i=0; i<searchRows.length; i++){
                     const imgRows = await postDao.getPostImages(connection, searchRows[i].postId)
                     const imgList = [];
@@ -130,7 +153,7 @@ exports.getPosts = async function (req, res) {
                 return res.json({
                     isSuccess: true,
                     code: 1000,
-                    message: "검색 결과 게시물 조회 성공",
+                    message: "검색 결과 게시물 조회 성공 - 페이지 : " + page + " 읽은 개수 : " + limit,
                     result: searchRows
                 })
 
@@ -145,7 +168,7 @@ exports.getPosts = async function (req, res) {
                     });
                 }
 
-                const postRows = await postDao.getPosts(connection, categoryName, order);
+                const postRows = await postDao.getPosts(connection, categoryName, order, Number(limit)*(Number(page)-1), Number(limit));
                 for(let i=0; i<postRows.length; i++){
                     const imgRows = await postDao.getPostImages(connection, postRows[i].postId)
                     const imgList = [];
@@ -159,7 +182,7 @@ exports.getPosts = async function (req, res) {
                 return res.json({
                     isSuccess: true,
                     code: 1000,
-                    message: "카테고리 게시물 조회 성공",
+                    message: "카테고리 게시물 조회 성공 - 페이지 : " + page + " 읽은 개수 : " + limit,
                     result: postRows
                 });
             } else {
@@ -288,6 +311,51 @@ exports.getPostDetail = async function (req, res) {
         }
     } catch (err) {
         logger.error(`App - insertPost Query error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
+};
+
+/**
+ * API No. 28
+ * API Name : 게시물 신고 API
+ * [POST] /posts/:postId/reports
+ */
+ exports.insertReport = async function (req, res) {
+    try {
+        try {
+            const postId = req.params.postId;
+            const userId = req.verifiedToken.userId;
+            const {
+                reason
+            } = req.body;
+
+            if (!postId) return res.json({isSuccess: false, code: 2037, message: "postId를 입력해주세요."});
+            if (!reason) return res.json({isSuccess: false, code: 2027, message: "신고 사유를 입력해주세요."});
+
+            const connection = await pool.getConnection(async (conn) => conn);
+            const postRows = await postDao.checkPostExists(connection, postId);
+            if (postRows.length === 0) {
+                connection.release();
+                return res.json({
+                    isSuccess: false,
+                    code: 2008,
+                    message: "존재하지 않는 postId",
+                })
+            }
+            const insertReportRow = await postDao.insertReport(connection, userId, postId, reason);
+            connection.release();
+            return res.json({
+                isSuccess: true,
+                code: 1000,
+                message: "게시글 신고 성공"
+            })
+        } catch (err) {
+            connection.release();
+            logger.error(`App - insertReport DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - insertReport error\n: ${JSON.stringify(err)}`);
         return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
     }
 };
