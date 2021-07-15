@@ -91,6 +91,31 @@ async function addPostToFolder(connection, folderId, postId) {
     return rows;
 }
 
+async function getFolderState(connection, userId, postId) {
+    const query = `
+        select F.folderId,
+               folderName,
+               ifnull((select imgUrl
+                       from PostImage
+                       where FP.postId = PostImage.postId
+                       order by imgId limit 1),'') as imgUrl,
+               (case
+                    when (select COUNT(*)
+                          from FolderPost
+                          where FolderPost.folderId = F.folderId and FolderPost.postId = ?) > 0 then 'Y'
+                    else 'N' end)                  as isBookMarked
+        from Folder F
+                 left outer join (select * from FolderPost group by folderId) FP on F.folderId = FP.folderId
+        where userId = ?
+        order by F.folderId;
+    `;
+    const [rows] = await connection.query(
+        query,
+        [postId, userId]
+    );
+    return rows;
+}
+
 module.exports = {
     getFolders,
     getFolderPosts,
@@ -98,4 +123,5 @@ module.exports = {
     checkFolderExists,
     checkFolderPostExists,
     addPostToFolder,
+    getFolderState,
 };
