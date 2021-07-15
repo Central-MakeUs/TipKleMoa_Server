@@ -267,3 +267,61 @@ exports.check = async function (req, res) {
         return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
     }
 };
+
+/**
+ * API No. 32
+ * API Name : 로그아웃 API
+ * [PATCH] /logout
+ */
+ exports.logout = async function (req, res) {
+
+    try {
+        try {
+            const userId = req.verifiedToken.userId;
+            const connection = await pool.getConnection(async (conn) => conn);
+            await userDao.logout(connection, userId);
+            connection.release();
+            return res.json({
+                isSuccess: true,
+                code: 1000,
+                message: "로그아웃 성공"
+            })
+        } catch (err) {
+            connection.release();
+            logger.error(`App - logout DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - logout error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
+};
+
+/**
+ * API No. 33
+ * API Name : 회원탈퇴 API
+ * [DELETE] /users
+ */
+ exports.deleteUser = async function (req, res) {
+
+    try {
+        try {
+            const userId = req.verifiedToken.userId;
+            const connection = await pool.getConnection(async (conn) => conn);
+            await userDao.deleteUser(connection, userId);
+            connection.release();
+            return res.json({
+                isSuccess: true,
+                code: 1000,
+                message: "회원탈퇴 성공"
+            })
+        } catch (err) {
+            connection.release();
+            logger.error(`App - deleteUser DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - deleteUser error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
+};

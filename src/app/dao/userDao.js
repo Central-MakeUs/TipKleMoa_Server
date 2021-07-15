@@ -75,11 +75,43 @@ async function updateNickname(connection, userId, nickName) {
   return rows[0];
 }
 
+// 로그아웃
+async function logout(connection, userId) {
+  const query = `
+    UPDATE UserInfo
+    SET loginStatus = 'N'
+    WHERE userId = ?
+  `;
+  const params = [userId];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
+// 회원탈퇴
+async function deleteUser(connection, userId) {
+  const query = `
+    UPDATE UserInfo
+    SET isDeleted = 'Y'
+    WHERE userId = ?
+  `;
+  const params = [userId];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
 
 module.exports = {
   getUserByKakao,
   insertUserInfoByKakao,
   insertUserCategory,
   getProfile,
-  updateNickname
+  updateNickname,
+  logout,
+  deleteUser
 };
