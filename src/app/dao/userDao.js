@@ -43,9 +43,43 @@ async function insertUserCategory(connection, userId, category) {
   return rows[0];
 }
 
+// 마이페이지 조회
+async function getProfile(connection, userId) {
+  const query = `
+    SELECT Level.level, levelName, levelImgUrl, nickName, point
+    FROM UserInfo
+    JOIN Level
+    ON UserInfo.level = Level.level
+    WHERE userId = ?;
+  `;
+  const params = [userId];
+  const [rows] = await connection.query(
+    query,
+    params
+  );
+  return rows;
+}
+
+// 닉네임 수정
+async function updateNickname(connection, userId, nickName) {
+  const query = `
+    UPDATE UserInfo
+    SET nickName = ?
+    WHERE userId = ?
+  `;
+  const params = [nickName, userId];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
 
 module.exports = {
   getUserByKakao,
   insertUserInfoByKakao,
-  insertUserCategory
+  insertUserCategory,
+  getProfile,
+  updateNickname
 };
