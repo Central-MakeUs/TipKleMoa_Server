@@ -374,6 +374,20 @@ async function insertImgUrl(connection, postId, imgUrl, imgText) {
   return rows[0];
 }
 
+// 게시글 신고
+async function insertReport(connection, userId, postId, reason) {
+  const query = `
+      INSERT INTO ReportedPost(userId, postId, reason)
+      VALUES (?, ?, ?);
+  `;
+  const params = [userId, postId, reason];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
 
 module.exports = {
     getBanners,
@@ -385,5 +399,6 @@ module.exports = {
     getPostDetail,
     addPostHits,
     insertPost,
-    insertImgUrl
+    insertImgUrl,
+    insertReport
 };
