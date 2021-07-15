@@ -323,9 +323,19 @@ exports.getPostDetail = async function (req, res) {
                 reason
             } = req.body;
 
+            if (!postId) return res.json({isSuccess: false, code: 2037, message: "postId를 입력해주세요."});
             if (!reason) return res.json({isSuccess: false, code: 2027, message: "신고 사유를 입력해주세요."});
 
             const connection = await pool.getConnection(async (conn) => conn);
+            const postRows = await postDao.checkPostExists(connection, postId);
+            if (postRows.length === 0) {
+                connection.release();
+                return res.json({
+                    isSuccess: false,
+                    code: 2008,
+                    message: "존재하지 않는 postId",
+                })
+            }
             const insertReportRow = await postDao.insertReport(connection, userId, postId, reason);
             connection.release();
             return res.json({
