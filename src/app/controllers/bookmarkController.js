@@ -166,8 +166,17 @@ exports.getFolders = async function (req, res) {
                     message: "postId를 입력해주세요."
                 });
             }
-
             const connection = await pool.getConnection(async (conn) => conn);
+            const postRows = await postDao.checkPostExists(connection, postId);
+            if (postRows.length === 0) {
+                connection.release();
+                return res.json({
+                    isSuccess: false,
+                    code: 2008,
+                    message: "존재하지 않는 postId",
+                })
+            }
+
             const folderRows = await bookmarkDao.getFolderState(connection, userId, postId);
             connection.release();
             return res.json({
@@ -183,6 +192,78 @@ exports.getFolders = async function (req, res) {
         }
     } catch (err) {
         logger.error(`App - getFolders error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
+};
+
+/**
+ * API No. 20
+ * API Name : 게시물 저장 취소 API
+ * [DELETE] /folders/:folderId/posts/:postId
+ */
+exports.deletePostFromFolder = async function (req, res) {
+    try {
+        try {
+            const userId = req.verifiedToken.userId;
+            const postId = req.params.postId;
+            const folderId = req.params.folderId;
+            if(!folderId){
+                return res.json({
+                    isSuccess: false,
+                    code: 2036,
+                    message: "folderId를 입력해주세요."
+                });
+            }
+            if(!postId){
+                return res.json({
+                    isSuccess: false,
+                    code: 2037,
+                    message: "postId를 입력해주세요."
+                });
+            }
+            const connection = await pool.getConnection(async (conn) => conn);
+            const postRows = await postDao.checkPostExists(connection, postId);
+            if (postRows.length === 0) {
+                connection.release();
+                return res.json({
+                    isSuccess: false,
+                    code: 2008,
+                    message: "존재하지 않는 postId",
+                })
+            }
+            const folderRows = await bookmarkDao.checkFolderExists(connection, folderId, userId);
+            if(folderRows.length === 0){
+                connection.release();
+                return res.json({
+                    isSuccess: false,
+                    code: 2038,
+                    message: "존재하지 않는 folderId",
+                })
+            }
+            const folderPostRows = await bookmarkDao.checkFolderPostExists(connection, folderId, postId);
+            if(folderPostRows.length === 0){
+                connection.release();
+                return res.json({
+                    isSuccess: false,
+                    code: 2040,
+                    message: "폴더에 해당 게시물이 존재하지 않습니다.",
+                })
+            }
+
+            await bookmarkDao.deletePostFromFolder(connection, folderId, postId);
+            connection.release();
+            return res.json({
+                isSuccess: true,
+                code: 1000,
+                message: "게시물 저장 취소 성공",
+            })
+        } catch (err) {
+            connection.release();
+            logger.error(`App - deletePostFromFolder DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - deletePostFromFolder error\n: ${JSON.stringify(err)}`);
         return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
     }
 };

@@ -102,7 +102,8 @@ async function getFolderState(connection, userId, postId) {
                (case
                     when (select COUNT(*)
                           from FolderPost
-                          where FolderPost.folderId = F.folderId and FolderPost.postId = ?) > 0 then 'Y'
+                          where FolderPost.folderId = F.folderId
+                            and FolderPost.postId = ?) > 0 then 'Y'
                     else 'N' end)                  as isBookMarked
         from Folder F
                  left outer join (select * from FolderPost group by folderId) FP on F.folderId = FP.folderId
@@ -116,6 +117,21 @@ async function getFolderState(connection, userId, postId) {
     return rows;
 }
 
+async function deletePostFromFolder(connection, folderId, postId) {
+    const query = `
+        delete
+        from FolderPost
+        where folderId = ?
+          and postId = ?;
+
+    `;
+    const [rows] = await connection.query(
+        query,
+        [folderId, postId]
+    );
+    return rows;
+}
+
 module.exports = {
     getFolders,
     getFolderPosts,
@@ -124,4 +140,5 @@ module.exports = {
     checkFolderPostExists,
     addPostToFolder,
     getFolderState,
+    deletePostFromFolder,
 };
