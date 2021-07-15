@@ -308,3 +308,38 @@ exports.getPostDetail = async function (req, res) {
         return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
     }
 };
+
+/**
+ * API No. 28
+ * API Name : 게시물 신고 API
+ * [POST] /posts/:postId/reports
+ */
+ exports.insertReport = async function (req, res) {
+    try {
+        try {
+            const postId = req.params.postId;
+            const userId = req.verifiedToken.userId;
+            const {
+                reason
+            } = req.body;
+
+            if (!reason) return res.json({isSuccess: false, code: 2027, message: "신고 사유를 입력해주세요."});
+
+            const connection = await pool.getConnection(async (conn) => conn);
+            const insertReportRow = await postDao.insertReport(connection, userId, postId, reason);
+            connection.release();
+            return res.json({
+                isSuccess: true,
+                code: 1000,
+                message: "게시글 신고 성공"
+            })
+        } catch (err) {
+            connection.release();
+            logger.error(`App - insertReport DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - insertReport error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
+};
