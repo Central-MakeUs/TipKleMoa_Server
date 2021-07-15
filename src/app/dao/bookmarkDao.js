@@ -132,6 +132,19 @@ async function deletePostFromFolder(connection, folderId, postId) {
     return rows;
 }
 
+async function deleteFolder(connection, folderId){
+    const query = `
+        delete
+        from Folder
+        where folderId = ?;
+    `;
+    const [rows] = await connection.query(
+        query,
+        [folderId]
+    );
+    return rows;
+}
+
 module.exports = {
     getFolders,
     getFolderPosts,
@@ -141,4 +154,5 @@ module.exports = {
     addPostToFolder,
     getFolderState,
     deletePostFromFolder,
+    deleteFolder,
 };

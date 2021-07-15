@@ -267,3 +267,49 @@ exports.deletePostFromFolder = async function (req, res) {
         return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
     }
 };
+
+/**
+ * API No. 19
+ * API Name : 폴더 삭제 API
+ * [DELETE] /folders/:folderId
+ */
+exports.deleteFolder = async function (req, res) {
+    try {
+        try {
+            const userId = req.verifiedToken.userId;
+            const folderId = req.params.folderId;
+            if(!folderId){
+                return res.json({
+                    isSuccess: false,
+                    code: 2036,
+                    message: "folderId를 입력해주세요."
+                });
+            }
+            const connection = await pool.getConnection(async (conn) => conn);
+            const folderRows = await bookmarkDao.checkFolderExists(connection, folderId, userId);
+            if(folderRows.length === 0){
+                connection.release();
+                return res.json({
+                    isSuccess: false,
+                    code: 2038,
+                    message: "존재하지 않는 folderId",
+                })
+            }
+
+            await bookmarkDao.deleteFolder(connection, folderId);
+            connection.release();
+            return res.json({
+                isSuccess: true,
+                code: 1000,
+                message: "폴더 삭제 성공",
+            })
+        } catch (err) {
+            connection.release();
+            logger.error(`App - deleteFolder DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - deleteFolder error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
+};
