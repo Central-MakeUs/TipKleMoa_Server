@@ -210,7 +210,13 @@ exports.getPostDetail = async function (req, res) {
         try {
             const postId = req.params.postId;
             const userId = req.verifiedToken.userId;
-
+            if(!postId){
+                return res.json({
+                    isSuccess: false,
+                    code: 2037,
+                    message: "postId를 입력해주세요."
+                });
+            }
             const connection = await pool.getConnection(async (conn) => conn);
             const PostRows = await postDao.checkPostExists(connection, postId);
             if (PostRows.length === 0) {
@@ -265,7 +271,7 @@ exports.getPostDetail = async function (req, res) {
             if (!category) return res.json({isSuccess: false, code: 2020, message: "카테고리를 입력해주세요."});
             if (!whenText) return res.json({isSuccess: false, code: 2021, message: "when을 입력해주세요."});
             if (!howText) return res.json({isSuccess: false, code: 2022, message: "how를 입력해주세요."});
-            if (img < 1) return res.json({isSuccess: false, code: 2024, message: "이미지 URL을 입력해주세요."});
+            if (!img || img < 1) return res.json({isSuccess: false, code: 2024, message: "이미지 URL을 입력해주세요."});
             if (img > 5) return res.json({isSuccess: false, code: 2025, message: "이미지 URL을 5개 이하로 입력해주세요."});
 
             for(let i=0; i<img.length; i++) {
@@ -350,6 +356,67 @@ exports.getPostDetail = async function (req, res) {
         }
     } catch (err) {
         logger.error(`App - insertReport error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
+};
+
+/**
+ * API No.34
+ * API Name : 게시글 삭제 API
+ * [DELETE] /posts/:postId
+ */
+exports.deletePosts = async function (req, res) {
+    try {
+        try {
+            const userId = req.verifiedToken.userId;
+            const postId = req.params.postId;
+            if(!postId){
+                return res.json({
+                    isSuccess: false,
+                    code: 2037,
+                    message: "postId를 입력해주세요."
+                });
+            }
+            const connection = await pool.getConnection(async (conn) => conn);
+            await connection.beginTransaction();
+
+            const postRows = await postDao.checkPostExists(connection, postId);
+            if (postRows.length === 0) {
+                connection.release();
+                return res.json({
+                    isSuccess: false,
+                    code: 2008,
+                    message: "존재하지 않는 postId",
+                });
+            }
+            const authorRows = await postDao.checkPostAuthor(connection, postId, userId);
+            if (authorRows.length === 0) {
+                connection.release();
+                return res.json({
+                    isSuccess: false,
+                    code: 2041,
+                    message: "게시글 삭제 권한이 없습니다.",
+                });
+            }
+
+            await postDao.deletePosts(connection, postId);
+            await pointDao.insertPoint(connection, userId, -15 , "deletePost");
+
+            await connection.commit();
+            connection.release();
+            return res.json({
+                isSuccess: true,
+                code: 1000,
+                message: "게시글 삭제 성공"
+            });
+        } catch (err) {
+            await connection.rollback();
+            connection.release();
+            logger.error(`App - deletePosts DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - deletePosts error\n: ${JSON.stringify(err)}`);
         return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
     }
 };

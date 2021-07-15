@@ -8,4 +8,5 @@ module.exports = function(app){
     app.post('/posts', jwtMiddleware, post.insertPost);
     app.get('/posts/:postId', jwtMiddleware, post.getPostDetail);
     app.post('/posts/:postId/reports', jwtMiddleware, post.insertReport);
+    app.delete('/posts/:postId', jwtMiddleware, post.deletePosts);
 };

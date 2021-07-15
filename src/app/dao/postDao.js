@@ -388,6 +388,32 @@ async function insertReport(connection, userId, postId, reason) {
   return rows[0];
 }
 
+async function checkPostAuthor(connection, postId, userId) {
+    const query = `
+        select *
+        from Post
+        where postId = ?
+          and userId = ?;
+    `;
+    const [rows] = await connection.query(
+        query,
+        [postId, userId]
+    );
+    return rows;
+}
+
+async function deletePosts(connection, postId) {
+    const query = `
+        update Post
+        set isDeleted='Y'
+        where postId = ?;
+    `;
+    const [rows] = await connection.query(
+        query,
+        [postId]
+    );
+    return rows;
+}
 
 module.exports = {
     getBanners,
@@ -400,5 +426,7 @@ module.exports = {
     addPostHits,
     insertPost,
     insertImgUrl,
-    insertReport
+    insertReport,
+    checkPostAuthor,
+    deletePosts,
 };
