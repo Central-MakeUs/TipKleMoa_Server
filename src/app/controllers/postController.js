@@ -191,6 +191,7 @@ exports.getPostDetail = async function (req, res) {
             const connection = await pool.getConnection(async (conn) => conn);
             const PostRows = await postDao.checkPostExists(connection, postId);
             if (PostRows.length === 0) {
+                connection.release();
                 return res.json({
                     isSuccess: false,
                     code: 2008,

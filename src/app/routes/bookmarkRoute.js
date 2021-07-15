@@ -4,4 +4,5 @@ module.exports = function(app){
 
     app.get('/bookmarks', jwtMiddleware, bookmark.getBookmarks);
     app.post('/folders', jwtMiddleware, bookmark.addFolder);
+    app.post('/folders/:folderId/posts', jwtMiddleware, bookmark.addPostToFolder);
 };

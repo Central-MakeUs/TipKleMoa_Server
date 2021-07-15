@@ -52,8 +52,50 @@ async function addFolder(connection, userId, folderName) {
     return rows[0];
 }
 
+async function checkFolderExists(connection, folderId, userId) {
+    const query = `
+        select *
+        from Folder
+        where folderId=? and userId=?;
+    `;
+    const [rows] = await connection.query(
+        query,
+        [folderId, userId]
+    );
+    return rows;
+}
+
+async function checkFolderPostExists(connection, folderId, postId) {
+    const query = `
+        select *
+        from FolderPost
+        where folderId = ?
+          and postId = ?;
+    `;
+    const [rows] = await connection.query(
+        query,
+        [folderId, postId]
+    );
+    return rows;
+}
+
+async function addPostToFolder(connection, folderId, postId) {
+    const query = `
+        insert into FolderPost(folderId, postId)
+        values (?, ?);
+    `;
+    const [rows] = await connection.query(
+        query,
+        [folderId, postId]
+    );
+    return rows;
+}
+
 module.exports = {
     getFolders,
     getFolderPosts,
     addFolder,
+    checkFolderExists,
+    checkFolderPostExists,
+    addPostToFolder,
 };
