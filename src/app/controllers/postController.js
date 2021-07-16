@@ -293,7 +293,7 @@ exports.getPostDetail = async function (req, res) {
             }
 
             // 포인트 적용
-            const insertPointRow = await pointDao.insertPoint(connection, userId, 10, "updatePost");
+            const insertPointRow = await pointDao.insertPoint(connection, userId, 15, "updatePost");
 
             await connection.commit();
             connection.release();

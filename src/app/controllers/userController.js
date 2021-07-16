@@ -191,3 +191,79 @@ exports.check = async function (req, res) {
         message: "JWT 토큰 검증 성공",
     })
 };
+
+/**
+ * API No. 22
+ * API Name : 마이페이지 조회 API
+ * [GET] /users/profiles
+ */
+ exports.getProfile = async function (req, res) {
+
+    try {
+        try {
+            const userId = req.verifiedToken.userId;
+            const connection = await pool.getConnection(async (conn) => conn);
+            const [profileRows] = await userDao.getProfile(connection, userId);
+            let goal;
+            if(profileRows.level == 1) {
+                goal = 100
+            } else if(profileRows.level == 2) {
+                goal = 500
+            } else {
+                goal = 1000
+            }
+            const result = {
+                levelName: profileRows.levelName,
+                levelImgUrl: profileRows.levelImgUrl,
+                nickName: profileRows.nickName,
+                rate: Math.round(profileRows.point / goal * 100)
+            }
+            connection.release();
+            return res.json({
+                isSuccess: true,
+                code: 1000,
+                message: "마이페이지 조회 성공",
+                result: result
+            })
+        } catch (err) {
+            connection.release();
+            logger.error(`App - getProfile DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - getProfile error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
+};
+
+/**
+ * API No. 23
+ * API Name : 닉네임 수정 API
+ * [PATCH] /users/nickname
+ */
+ exports.updateNickname = async function (req, res) {
+
+    try {
+        const nickName = req.body.nickName;
+        if (!nickName) return res.json({isSuccess: false, code: 2004, message: "닉네임을 입력해주세요."});
+
+        try {
+            const userId = req.verifiedToken.userId;
+            const connection = await pool.getConnection(async (conn) => conn);
+            await userDao.updateNickname(connection, userId, nickName);
+            connection.release();
+            return res.json({
+                isSuccess: true,
+                code: 1000,
+                message: "닉네임 수정 성공"
+            })
+        } catch (err) {
+            connection.release();
+            logger.error(`App - updateNickname DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - updateNickname error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
+};
