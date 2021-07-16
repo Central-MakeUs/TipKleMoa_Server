@@ -374,6 +374,46 @@ async function insertImgUrl(connection, postId, imgUrl, imgText) {
   return rows[0];
 }
 
+// 게시글 신고
+async function insertReport(connection, userId, postId, reason) {
+  const query = `
+      INSERT INTO ReportedPost(userId, postId, reason)
+      VALUES (?, ?, ?);
+  `;
+  const params = [userId, postId, reason];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
+async function checkPostAuthor(connection, postId, userId) {
+    const query = `
+        select *
+        from Post
+        where postId = ?
+          and userId = ?;
+    `;
+    const [rows] = await connection.query(
+        query,
+        [postId, userId]
+    );
+    return rows;
+}
+
+async function deletePosts(connection, postId) {
+    const query = `
+        update Post
+        set isDeleted='Y'
+        where postId = ?;
+    `;
+    const [rows] = await connection.query(
+        query,
+        [postId]
+    );
+    return rows;
+}
 
 module.exports = {
     getBanners,
@@ -385,5 +425,8 @@ module.exports = {
     getPostDetail,
     addPostHits,
     insertPost,
-    insertImgUrl
+    insertImgUrl,
+    insertReport,
+    checkPostAuthor,
+    deletePosts,
 };
