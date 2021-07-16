@@ -206,11 +206,11 @@ exports.check = async function (req, res) {
             const [profileRows] = await userDao.getProfile(connection, userId);
             let goal;
             if(profileRows.level == 1) {
-                goal = 1000
+                goal = 100
             } else if(profileRows.level == 2) {
-                goal = 2000
+                goal = 500
             } else {
-                goal = 3000
+                goal = 1000
             }
             const result = {
                 levelName: profileRows.levelName,
