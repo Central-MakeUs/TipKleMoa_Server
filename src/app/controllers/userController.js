@@ -10,6 +10,7 @@ const userDao = require('../dao/userDao');
 const { constants } = require('buffer');
 
 const axios = require('axios')
+const schedule = require('node-schedule');
 
 /**
  * API No. 1
@@ -278,8 +279,12 @@ exports.check = async function (req, res) {
     try {
         try {
             const userId = req.verifiedToken.userId;
+            const token = req.headers['x-access-token'];
             const connection = await pool.getConnection(async (conn) => conn);
+            await connection.beginTransaction();
             await userDao.logout(connection, userId);
+            await userDao.insertBlacklist(connection, token);
+            await connection.commit();
             connection.release();
             return res.json({
                 isSuccess: true,
@@ -287,6 +292,7 @@ exports.check = async function (req, res) {
                 message: "로그아웃 성공"
             })
         } catch (err) {
+            await connection.rollback();
             connection.release();
             logger.error(`App - logout DB Connection error\n: ${JSON.stringify(err)}`);
             return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
@@ -307,8 +313,12 @@ exports.check = async function (req, res) {
     try {
         try {
             const userId = req.verifiedToken.userId;
+            const token = req.headers['x-access-token'];
             const connection = await pool.getConnection(async (conn) => conn);
+            await connection.beginTransaction();
             await userDao.deleteUser(connection, userId);
+            await userDao.insertBlacklist(connection, token);
+            await connection.commit();
             connection.release();
             return res.json({
                 isSuccess: true,
@@ -316,6 +326,7 @@ exports.check = async function (req, res) {
                 message: "회원탈퇴 성공"
             })
         } catch (err) {
+            await connection.rollback();
             connection.release();
             logger.error(`App - deleteUser DB Connection error\n: ${JSON.stringify(err)}`);
             return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
@@ -325,3 +336,10 @@ exports.check = async function (req, res) {
         return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
     }
 };
+
+schedule.scheduleJob('0 0 3 1 * *', async function() {
+    console.log('schedule: ' + new Date());
+    const connection = await pool.getConnection(async (conn) => conn);
+    const deleteBlacklistRows = await userDao.deleteBlacklist(connection);
+    connection.release();
+});

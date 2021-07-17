@@ -105,6 +105,47 @@ async function deleteUser(connection, userId) {
   return rows[0];
 }
 
+// JWT 토큰 블랙리스트에 추가
+async function insertBlacklist(connection, token) {
+  const query = `
+      INSERT INTO Blacklist(jwt)
+      VALUES (?);
+  `;
+  const params = [token];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
+// JWT 토큰 블랙리스트에 있는지 확인
+async function checkBlacklist(connection, token) {
+  const query = `
+    SELECT jwt
+    FROM Blacklist
+    WHERE jwt = ?
+  `;
+  const params = [token];
+  const [rows] = await connection.query(
+    query,
+    params
+  );
+  return rows;
+}
+
+// 기한이 지난 블랙리스트 삭제
+async function deleteBlacklist(connection) {
+  const query = `
+      DELETE FROM Blacklist
+      WHERE createdAt < Now() - INTERVAL 1 YEAR
+  `;
+  const [rows] = await connection.query(
+    query
+  );
+  return rows;
+}
+
 
 module.exports = {
   getUserByKakao,
@@ -113,5 +154,8 @@ module.exports = {
   getProfile,
   updateNickname,
   logout,
-  deleteUser
+  deleteUser,
+  insertBlacklist,
+  checkBlacklist,
+  deleteBlacklist
 };
