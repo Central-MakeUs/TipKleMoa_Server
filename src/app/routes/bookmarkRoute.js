@@ -6,6 +6,6 @@ module.exports = function(app){
     app.post('/folders', jwtMiddleware, bookmark.addFolder);
     app.post('/folders/:folderId/posts', jwtMiddleware, bookmark.addPostToFolder);
     app.get('/folders/posts/:postId', jwtMiddleware, bookmark.getFolders);
-    app.delete('/folders/:folderId/posts/:postId', jwtMiddleware, bookmark.deletePostFromFolder);
+    app.delete('/folders/posts/:postId', jwtMiddleware, bookmark.deletePostFromFolder);
     app.delete('/folders/:folderId', jwtMiddleware, bookmark.deleteFolder);
 };

@@ -67,7 +67,7 @@ async function checkFolderExists(connection, folderId, userId) {
 
 async function checkFolderPostExists(connection, userId, postId) {
     const query = `
-        select *
+        select FP.folderId as folderId, postId, userId
         from FolderPost FP
                  inner join (Select * from Folder where userId = ?) F on FP.folderId = F.folderId
         where postId = ?
@@ -123,7 +123,6 @@ async function deletePostFromFolder(connection, folderId, postId) {
         from FolderPost
         where folderId = ?
           and postId = ?;
-
     `;
     const [rows] = await connection.query(
         query,

@@ -199,21 +199,13 @@ exports.getFolders = async function (req, res) {
 /**
  * API No. 20
  * API Name : 게시물 저장 취소 API
- * [DELETE] /folders/:folderId/posts/:postId
+ * [DELETE] /folders/posts/:postId
  */
 exports.deletePostFromFolder = async function (req, res) {
     try {
         try {
             const userId = req.verifiedToken.userId;
             const postId = req.params.postId;
-            const folderId = req.params.folderId;
-            if(!folderId){
-                return res.json({
-                    isSuccess: false,
-                    code: 2036,
-                    message: "folderId를 입력해주세요."
-                });
-            }
             if(!postId){
                 return res.json({
                     isSuccess: false,
@@ -231,15 +223,6 @@ exports.deletePostFromFolder = async function (req, res) {
                     message: "존재하지 않는 postId",
                 })
             }
-            const folderRows = await bookmarkDao.checkFolderExists(connection, folderId, userId);
-            if(folderRows.length === 0){
-                connection.release();
-                return res.json({
-                    isSuccess: false,
-                    code: 2038,
-                    message: "존재하지 않는 folderId",
-                })
-            }
             const folderPostRows = await bookmarkDao.checkFolderPostExists(connection, userId, postId);
             if(folderPostRows.length === 0){
                 connection.release();
@@ -249,7 +232,7 @@ exports.deletePostFromFolder = async function (req, res) {
                     message: "폴더에 해당 게시물이 존재하지 않습니다.",
                 })
             }
-
+            const folderId = folderPostRows[0].folderId;
             await bookmarkDao.deletePostFromFolder(connection, folderId, postId);
             connection.release();
             return res.json({
