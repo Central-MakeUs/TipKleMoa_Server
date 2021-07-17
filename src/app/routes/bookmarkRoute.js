@@ -8,4 +8,5 @@ module.exports = function(app){
     app.get('/folders/posts/:postId', jwtMiddleware, bookmark.getFolders);
     app.delete('/folders/posts/:postId', jwtMiddleware, bookmark.deletePostFromFolder);
     app.delete('/folders/:folderId', jwtMiddleware, bookmark.deleteFolder);
+    app.get('/folders/:folderId/posts', jwtMiddleware, bookmark.getFolderPosts);
 };

@@ -17,7 +17,7 @@ exports.getBookmarks = async function (req, res) {
             const connection = await pool.getConnection(async (conn) => conn);
             let folderRows = await bookmarkDao.getFolders(connection, userId);
             for(let i=0; i<folderRows.length; i++) {
-                let postRows = await bookmarkDao.getFolderPosts(connection, folderRows[i].folderId);
+                let postRows = await bookmarkDao.getFolderPostsPreview(connection, folderRows[i].folderId);
                 folderRows[i].postsInfo = postRows;
             }
             connection.release();
@@ -293,6 +293,57 @@ exports.deleteFolder = async function (req, res) {
         }
     } catch (err) {
         logger.error(`App - deleteFolder error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
+};
+
+/**
+* API No. 18
+* API Name : 폴더 게사글 목록 조회 API
+* [GET] /folders/:folderId/posts
+*/
+exports.getFolderPosts = async function (req, res) {
+    try {
+        try {
+            const userId = req.verifiedToken.userId;
+            const folderId = req.params.folderId;
+            if(!folderId){
+                return res.json({
+                    isSuccess: false,
+                    code: 2036,
+                    message: "folderId를 입력해주세요."
+                });
+            }
+            const connection = await pool.getConnection(async (conn) => conn);
+            const folderRows = await bookmarkDao.checkFolderExists(connection, folderId, userId);
+            if(folderRows.length === 0){
+                connection.release();
+                return res.json({
+                    isSuccess: false,
+                    code: 2038,
+                    message: "존재하지 않는 folderId",
+                });
+            }
+
+            const postRows = await bookmarkDao.getFolderPosts(connection, folderId);
+            const result = {
+                folderName : folderRows[0].folderName,
+                post : postRows
+            };
+            connection.release();
+            return res.json({
+                isSuccess: true,
+                code: 1000,
+                message: "폴더에 저장된 게시물 목록 조회 성공",
+                result : result
+            });
+        } catch (err) {
+            connection.release();
+            logger.error(`App - getFolderPosts DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - getFolderPosts error\n: ${JSON.stringify(err)}`);
         return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
     }
 };

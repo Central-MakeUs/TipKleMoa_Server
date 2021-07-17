@@ -16,7 +16,7 @@ async function getFolders(connection, userId) {
 }
 
 // 북마크 폴더별 대표 게시글 2개 조회
-async function getFolderPosts(connection, folderId) {
+async function getFolderPostsPreview(connection, folderId) {
     const query = `
         SELECT Post.postId, whenText AS title, (SELECT imgUrl FROM PostImage WHERE postId = Post.postId LIMIT 1) AS imgUrl
         FROM Post
@@ -56,7 +56,8 @@ async function checkFolderExists(connection, folderId, userId) {
     const query = `
         select *
         from Folder
-        where folderId=? and userId=?;
+        where folderId = ?
+          and userId = ?;
     `;
     const [rows] = await connection.query(
         query,
@@ -144,9 +145,28 @@ async function deleteFolder(connection, folderId){
     return rows;
 }
 
+async function getFolderPosts(connection, folderId) {
+    const query = `
+        select FP.postId                                             as                       postId,
+               ifnull(concat('[', categoryName, '] ', whenText), "") as                       title,
+               (select imgUrl from PostImage where PostImage.postId = P.postId order by imgId limit 1) as imgUrl
+        from FolderPost FP
+            inner join (select * from Post where isDeleted = 'N') P
+        on FP.postId = P.postId
+            inner join Category C on P.categoryId= C.categoryId
+        where folderId = ?
+        order by FP.createdAt desc, folderPostId desc
+    `;
+    const [rows] = await connection.query(
+        query,
+        [folderId]
+    );
+    return rows;
+}
+
 module.exports = {
     getFolders,
-    getFolderPosts,
+    getFolderPostsPreview,
     addFolder,
     checkFolderExists,
     checkFolderPostExists,
@@ -154,4 +174,5 @@ module.exports = {
     getFolderState,
     deletePostFromFolder,
     deleteFolder,
+    getFolderPosts,
 };
