@@ -5,7 +5,7 @@ module.exports = function(app){
     app.get('/bookmarks', jwtMiddleware, bookmark.getBookmarks);
     app.post('/folders', jwtMiddleware, bookmark.addFolder);
     app.post('/folders/:folderId/posts', jwtMiddleware, bookmark.addPostToFolder);
-    app.get('/folders/posts/:postId', jwtMiddleware, bookmark.getFolders);
+    app.get('/folders', jwtMiddleware, bookmark.getFolderList);
     app.delete('/folders/posts/:postId', jwtMiddleware, bookmark.deletePostFromFolder);
     app.delete('/folders/:folderId', jwtMiddleware, bookmark.deleteFolder);
     app.get('/folders/:folderId/posts', jwtMiddleware, bookmark.getFolderPosts);

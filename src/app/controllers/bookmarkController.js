@@ -152,32 +152,15 @@ exports.addPostToFolder = async function (req, res) {
 /**
  * API No. 15
  * API Name : 폴더 목록 조회 API
- * [GET] /folders/posts/:postId
+ * [GET] /folders
  */
-exports.getFolders = async function (req, res) {
+exports.getFolderList = async function (req, res) {
     try {
         try {
             const userId = req.verifiedToken.userId;
-            const postId = req.params.postId;
-            if(!postId){
-                return res.json({
-                    isSuccess: false,
-                    code: 2037,
-                    message: "postId를 입력해주세요."
-                });
-            }
-            const connection = await pool.getConnection(async (conn) => conn);
-            const postRows = await postDao.checkPostExists(connection, postId);
-            if (postRows.length === 0) {
-                connection.release();
-                return res.json({
-                    isSuccess: false,
-                    code: 2008,
-                    message: "존재하지 않는 postId",
-                })
-            }
 
-            const folderRows = await bookmarkDao.getFolderState(connection, userId, postId);
+            const connection = await pool.getConnection(async (conn) => conn);
+            const folderRows = await bookmarkDao.getFolderList(connection, userId);
             connection.release();
             return res.json({
                 isSuccess: true,
