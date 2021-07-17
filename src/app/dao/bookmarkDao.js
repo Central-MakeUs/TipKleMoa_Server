@@ -65,16 +65,16 @@ async function checkFolderExists(connection, folderId, userId) {
     return rows;
 }
 
-async function checkFolderPostExists(connection, folderId, postId) {
+async function checkFolderPostExists(connection, userId, postId) {
     const query = `
         select *
-        from FolderPost
-        where folderId = ?
-          and postId = ?;
+        from FolderPost FP
+                 inner join (Select * from Folder where userId = ?) F on FP.folderId = F.folderId
+        where postId = ?
     `;
     const [rows] = await connection.query(
         query,
-        [folderId, postId]
+        [userId, postId]
     );
     return rows;
 }

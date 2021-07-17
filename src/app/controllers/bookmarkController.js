@@ -121,13 +121,13 @@ exports.addPostToFolder = async function (req, res) {
                     message: "존재하지 않는 folderId",
                 })
             }
-            const folderPostRows = await bookmarkDao.checkFolderPostExists(connection, folderId, postId);
+            const folderPostRows = await bookmarkDao.checkFolderPostExists(connection, userId, postId);
             if(folderPostRows.length > 0){
                 connection.release();
                 return res.json({
                     isSuccess: false,
                     code: 2039,
-                    message: "이미 폴더에 저장된 postId",
+                    message: "이미 저장된 postId",
                 })
             }
 
@@ -240,7 +240,7 @@ exports.deletePostFromFolder = async function (req, res) {
                     message: "존재하지 않는 folderId",
                 })
             }
-            const folderPostRows = await bookmarkDao.checkFolderPostExists(connection, folderId, postId);
+            const folderPostRows = await bookmarkDao.checkFolderPostExists(connection, userId, postId);
             if(folderPostRows.length === 0){
                 connection.release();
                 return res.json({
