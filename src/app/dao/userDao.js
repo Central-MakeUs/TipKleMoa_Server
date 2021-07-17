@@ -75,11 +75,87 @@ async function updateNickname(connection, userId, nickName) {
   return rows[0];
 }
 
+// 로그아웃
+async function logout(connection, userId) {
+  const query = `
+    UPDATE UserInfo
+    SET loginStatus = 'N'
+    WHERE userId = ?
+  `;
+  const params = [userId];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
+// 회원탈퇴
+async function deleteUser(connection, userId) {
+  const query = `
+    UPDATE UserInfo
+    SET isDeleted = 'Y'
+    WHERE userId = ?
+  `;
+  const params = [userId];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
+// JWT 토큰 블랙리스트에 추가
+async function insertBlacklist(connection, token) {
+  const query = `
+      INSERT INTO Blacklist(jwt)
+      VALUES (?);
+  `;
+  const params = [token];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
+// JWT 토큰 블랙리스트에 있는지 확인
+async function checkBlacklist(connection, token) {
+  const query = `
+    SELECT jwt
+    FROM Blacklist
+    WHERE jwt = ?
+  `;
+  const params = [token];
+  const [rows] = await connection.query(
+    query,
+    params
+  );
+  return rows;
+}
+
+// 기한이 지난 블랙리스트 삭제
+async function deleteBlacklist(connection) {
+  const query = `
+      DELETE FROM Blacklist
+      WHERE createdAt < Now() - INTERVAL 1 YEAR
+  `;
+  const [rows] = await connection.query(
+    query
+  );
+  return rows;
+}
+
 
 module.exports = {
   getUserByKakao,
   insertUserInfoByKakao,
   insertUserCategory,
   getProfile,
-  updateNickname
+  updateNickname,
+  logout,
+  deleteUser,
+  insertBlacklist,
+  checkBlacklist,
+  deleteBlacklist
 };
