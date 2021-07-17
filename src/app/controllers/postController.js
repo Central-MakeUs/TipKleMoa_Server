@@ -231,6 +231,12 @@ exports.getPostDetail = async function (req, res) {
 
             const postDetailRow = await postDao.getPostDetail(connection, postId, userId);
             const imgRows = await postDao.getPostImages(connection, postDetailRow[0].postId)
+            if(userId==postDetailRow[0].userId){
+                postDetailRow[0].isAuthor = "Y";
+            }
+            else{
+                postDetailRow[0].isAuthor = "N";
+            }
             const imgList = [];
             for(let j=0; j<imgRows.length; j++){
                 imgList.push(imgRows[j].imgUrl);
