@@ -29,8 +29,8 @@ async function insertPoint(connection, userId, point, reason) {
   const userLevelQuery = `
       UPDATE UserInfo
       SET level = CASE
-        WHEN point >= 2000 THEN 3
-        WHEN point >= 1000 THEN 2
+        WHEN point >= 500 THEN 3
+        WHEN point >= 100 THEN 2
         ELSE 1
         END
       WHERE userId = ?

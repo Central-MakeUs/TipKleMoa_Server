@@ -43,9 +43,119 @@ async function insertUserCategory(connection, userId, category) {
   return rows[0];
 }
 
+// 마이페이지 조회
+async function getProfile(connection, userId) {
+  const query = `
+    SELECT Level.level, levelName, levelImgUrl, nickName, point
+    FROM UserInfo
+    JOIN Level
+    ON UserInfo.level = Level.level
+    WHERE userId = ?;
+  `;
+  const params = [userId];
+  const [rows] = await connection.query(
+    query,
+    params
+  );
+  return rows;
+}
+
+// 닉네임 수정
+async function updateNickname(connection, userId, nickName) {
+  const query = `
+    UPDATE UserInfo
+    SET nickName = ?
+    WHERE userId = ?
+  `;
+  const params = [nickName, userId];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
+// 로그아웃
+async function logout(connection, userId) {
+  const query = `
+    UPDATE UserInfo
+    SET loginStatus = 'N'
+    WHERE userId = ?
+  `;
+  const params = [userId];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
+// 회원탈퇴
+async function deleteUser(connection, userId) {
+  const query = `
+    UPDATE UserInfo
+    SET isDeleted = 'Y'
+    WHERE userId = ?
+  `;
+  const params = [userId];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
+// JWT 토큰 블랙리스트에 추가
+async function insertBlacklist(connection, token) {
+  const query = `
+      INSERT INTO Blacklist(jwt)
+      VALUES (?);
+  `;
+  const params = [token];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
+// JWT 토큰 블랙리스트에 있는지 확인
+async function checkBlacklist(connection, token) {
+  const query = `
+    SELECT jwt
+    FROM Blacklist
+    WHERE jwt = ?
+  `;
+  const params = [token];
+  const [rows] = await connection.query(
+    query,
+    params
+  );
+  return rows;
+}
+
+// 기한이 지난 블랙리스트 삭제
+async function deleteBlacklist(connection) {
+  const query = `
+      DELETE FROM Blacklist
+      WHERE createdAt < Now() - INTERVAL 1 YEAR
+  `;
+  const [rows] = await connection.query(
+    query
+  );
+  return rows;
+}
+
 
 module.exports = {
   getUserByKakao,
   insertUserInfoByKakao,
-  insertUserCategory
+  insertUserCategory,
+  getProfile,
+  updateNickname,
+  logout,
+  deleteUser,
+  insertBlacklist,
+  checkBlacklist,
+  deleteBlacklist
 };
