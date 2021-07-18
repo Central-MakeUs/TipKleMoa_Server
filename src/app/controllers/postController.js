@@ -145,6 +145,12 @@ exports.getPosts = async function (req, res) {
                         imgList.push(imgRows[j].imgUrl);
                     }
                     searchRows[i].imgUrl = imgList;
+                    if(searchRows[i].userId === userId){
+                        searchRows[i].isAuthor = "Y";
+                    }
+                    else{
+                        searchRows[i].isAuthor = "N";
+                    }
                 }
 
                 await searchDao.insertSearchKeyword(connection, userId, search);
@@ -176,6 +182,12 @@ exports.getPosts = async function (req, res) {
                         imgList.push(imgRows[j].imgUrl);
                     }
                     postRows[i].imgUrl = imgList;
+                    if(postRows[i].userId === userId){
+                        postRows[i].isAuthor = "Y";
+                    }
+                    else{
+                        postRows[i].isAuthor = "N";
+                    }
                 }
 
                 connection.release();
