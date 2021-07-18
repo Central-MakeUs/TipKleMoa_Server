@@ -290,6 +290,15 @@ exports.getPostDetail = async function (req, res) {
             }
 
             const connection = await pool.getConnection(async (conn) => conn);
+            const categoryRows = await categoryDao.checkCategoryExists(connection, category);
+            if (categoryRows.length === 0) {
+                return res.json({
+                    isSuccess: false,
+                    code: 2007,
+                    message: "존재하지 않는 category",
+                })
+            }
+
             await connection.beginTransaction();
             const insertPostRow = await postDao.insertPost(connection, userId, category, whenText, howText, description);
 
