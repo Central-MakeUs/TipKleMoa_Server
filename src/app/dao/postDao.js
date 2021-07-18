@@ -348,11 +348,22 @@ async function checkPostExists(connection, postId) {
 
 // 게시글 등록
 async function insertPost(connection, userId, category, whenText, howText, description) {
+  const categoryQuery = `
+      SELECT categoryId
+      FROM Category
+      WHERE categoryName = ?
+  `;
+  const categoryParams = [category];
+  const [categoryRows] = await connection.query(
+    categoryQuery,
+    categoryParams
+  );
+
   const query = `
       INSERT INTO Post(categoryId, userId, whenText, howText, description)
       VALUES (?, ?, ?, ?, ?);
   `;
-  const params = [category, userId, whenText, howText, description];
+  const params = [categoryRows[0].categoryId, userId, whenText, howText, description];
   const rows = await connection.query(
     query,
     params
