@@ -294,7 +294,7 @@ exports.getPostDetail = async function (req, res) {
             if (img > 5) return res.json({isSuccess: false, code: 2025, message: "이미지 URL을 5개 이하로 입력해주세요."});
 
             for(let i=0; i<img.length; i++) {
-                if (!regUrlType.test(img[i][0])) return res.json({
+                if (!regUrlType.test(img[i])) return res.json({
                     isSuccess: false,
                     code: 2026,
                     message: "이미지 URL 형식이 잘못되었습니다."
@@ -317,7 +317,7 @@ exports.getPostDetail = async function (req, res) {
             postId = insertPostRow.insertId;
             let insertImgUrl;
             for(let i=0; i<img.length; i++) {
-                insertImgUrl = await postDao.insertImgUrl(connection, postId, img[i][0], img[i][1]);
+                insertImgUrl = await postDao.insertImgUrl(connection, postId, img[i]);
             }
 
             // 포인트 적용

@@ -372,12 +372,12 @@ async function insertPost(connection, userId, category, whenText, howText, descr
 }
 
 // 이미지 URL 등록
-async function insertImgUrl(connection, postId, imgUrl, imgText) {
+async function insertImgUrl(connection, postId, imgUrl) {
   const query = `
-      INSERT INTO PostImage(postId, imgUrl, imgText)
-      VALUES (?, ?, ?);
+      INSERT INTO PostImage(postId, imgUrl)
+      VALUES (?, ?);
   `;
-  const params = [postId, imgUrl, imgText];
+  const params = [postId, imgUrl];
   const rows = await connection.query(
     query,
     params
