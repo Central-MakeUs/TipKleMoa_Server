@@ -205,19 +205,40 @@ exports.check = async function (req, res) {
             const userId = req.verifiedToken.userId;
             const connection = await pool.getConnection(async (conn) => conn);
             const [profileRows] = await userDao.getProfile(connection, userId);
+            let present;
             let goal;
             if(profileRows.level == 1) {
-                goal = 100
+                present = 0;
+                goal = 100;
             } else if(profileRows.level == 2) {
-                goal = 500
+                present = 100;
+                goal = 500;
             } else {
-                goal = 1000
+                present = 500;
+                goal = 1000;
+            }
+            let rate = Math.round(((profileRows.point - present) / (goal - present) * 100) / 10) * 10;
+            let levelbar;
+            if(rate < 20) {
+                levelbar = 0;
+            } else if(rate < 40) {
+                levelbar = 1;
+            } else if(rate < 60) {
+                levelbar = 2;
+            } else if(rate < 80) {
+                levelbar = 3;
+            } else if(rate < 100) {
+                levelbar = 4;
+            } else {
+                levelbar = 5;
             }
             const result = {
+                level: profileRows.level,
                 levelName: profileRows.levelName,
-                levelImgUrl: profileRows.levelImgUrl,
+                profileImgUrl: profileRows.profileImgUrl,
                 nickName: profileRows.nickName,
-                rate: Math.round(profileRows.point / goal * 100)
+                levelbar: levelbar,
+                achievement: profileRows.point + " / " + goal
             }
             connection.release();
             return res.json({
