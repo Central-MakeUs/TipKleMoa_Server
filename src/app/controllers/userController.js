@@ -144,6 +144,8 @@ exports.kakaoSignUp = async function (req, res) {
             for(let i=0; i<category.length; i++) {
                 insertUserCategory = await userDao.insertUserCategory(connection, userId, category[i]);
             }
+            // 기본 폴더 생성
+            await bookmarkDao.addFolder(connection, userId, "기본 폴더");
 
             // 토큰 생성
             const token = await jwt.sign({
