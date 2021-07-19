@@ -15,15 +15,16 @@ async function getFolders(connection, userId) {
     return rows;
 }
 
-// 북마크 폴더별 대표 게시글 2개 조회
+// 북마크 폴더별 대표 게시글 4개 조회
 async function getFolderPostsPreview(connection, folderId) {
     const query = `
-        SELECT Post.postId, whenText AS title, (SELECT imgUrl FROM PostImage WHERE postId = Post.postId LIMIT 1) AS imgUrl
+        SELECT Post.postId, (SELECT imgUrl FROM PostImage WHERE postId = Post.postId LIMIT 1) AS imgUrl
         FROM Post
             JOIN FolderPost
         ON folderId = ? and Post.postId = FolderPost.postId
         WHERE Post.isDeleted = 'N'
-            LIMIT 2;
+        ORDER BY FolderPost.createdAt DESC
+            LIMIT 4;
     `;
     const params = [folderId];
     const [rows] = await connection.query(
