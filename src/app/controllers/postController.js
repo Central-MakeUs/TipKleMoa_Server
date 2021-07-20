@@ -5,6 +5,7 @@ const postDao = require('../dao/postDao');
 const categoryDao = require('../dao/categoryDao');
 const searchDao = require('../dao/searchDao');
 const pointDao = require('../dao/pointDao');
+const bookmarkDao = require('../dao/bookmarkDao');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const secret_config = require('../../../config/secret');
@@ -427,6 +428,7 @@ exports.deletePosts = async function (req, res) {
                 });
             }
 
+            await bookmarkDao.deletePostsFromAllFolder(connection, postId);
             await postDao.deletePosts(connection, postId);
             await pointDao.insertPoint(connection, userId, -15 , "deletePost");
 
