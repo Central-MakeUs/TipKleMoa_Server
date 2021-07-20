@@ -127,6 +127,19 @@ async function deletePostFromFolder(connection, folderId, postId) {
     return rows;
 }
 
+async function deletePostsFromAllFolder(connection, postId) {
+    const query = `
+        delete
+        from FolderPost
+        where postId = ?;
+    `;
+    const [rows] = await connection.query(
+        query,
+        [postId]
+    );
+    return rows;
+}
+
 async function deleteFolder(connection, folderId){
     const query = `
         delete
@@ -184,4 +197,5 @@ module.exports = {
     deleteFolder,
     deleteFolderPosts,
     getFolderPosts,
+    deletePostsFromAllFolder,
 };
