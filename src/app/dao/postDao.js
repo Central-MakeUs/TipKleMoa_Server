@@ -34,7 +34,7 @@ async function getPreviews(connection, categoryName, order) {
                            where p.postId = i.postId
                            order by imgId limit 1),'') as thumbnailUrl
             from Post p
-            where categoryId = (select categoryId from Category where categoryName = ?)
+            where p.isDeleted='N' and categoryId = (select categoryId from Category where categoryName = ?)
             order by createdAt desc limit 4;
         `
     } else if (order == 'popular') {
@@ -46,7 +46,7 @@ async function getPreviews(connection, categoryName, order) {
                            where p.postId = i.postId
                            order by imgId limit 1), '') as thumbnailUrl
             from Post p
-            where categoryId = (select categoryId from Category where categoryName = ?)
+            where p.isDeleted='N' and categoryId = (select categoryId from Category where categoryName = ?)
             order by (select count(*)
                       from PostHits h
                       where h.postId = p.postId) desc,
