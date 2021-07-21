@@ -241,7 +241,7 @@ exports.check = async function (req, res) {
                 profileImgUrl: profileRows.profileImgUrl,
                 nickName: profileRows.nickName,
                 levelbar: levelbar,
-                achievement: profileRows.point + " / " + goal
+                achievement: profileRows.point + " / " + goal + "p"
             }
             connection.release();
             return res.json({
