@@ -15,6 +15,7 @@ module.exports = function () {
 
     app.use(cors());
     // app.use(express.static(process.cwd() + '/public'));
+    app.use(express.static("static"));
 
     /* App (Android, iOS) */
     require('../src/app/routes/indexRoute')(app);
