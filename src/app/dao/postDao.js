@@ -80,8 +80,8 @@ async function getPosts(connection, categoryName, order, page, limit) {
                    howText,
                    (case
                         when isnull(description) then ''
-                        when LENGTH(description) <= 80 then description
-                        else concat(substr(description, 1, 80), '...더보기') end)         as description,
+                        when CHAR_LENGTH(description) <= 70 then description
+                        else concat(substr(description, 1, 70), '...더보기') end)         as description,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
                             1)                                                         as score,
                    cast((truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
@@ -118,8 +118,8 @@ async function getPosts(connection, categoryName, order, page, limit) {
                    howText,
                    (case
                         when isnull(description) then ''
-                        when LENGTH(description) <= 80 then description
-                        else concat(substr(description, 1, 80), '...더보기') end)         as description,
+                        when CHAR_LENGTH(description) <= 70 then description
+                        else concat(substr(description, 1, 70), '...더보기') end)         as description,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
                             1)                                                         as score,
                    cast((truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
@@ -173,8 +173,8 @@ async function searchPosts(connection, search, order, page, limit) {
                    howText,
                    (case
                         when isnull(description) then ''
-                        when LENGTH(description) <= 80 then description
-                        else concat(substr(description, 1, 80), '...더보기') end)         as description,
+                        when CHAR_LENGTH(description) <= 70 then description
+                        else concat(substr(description, 1, 70), '...더보기') end)         as description,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
                             1)                                                         as score,
                    cast((truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
@@ -214,8 +214,8 @@ async function searchPosts(connection, search, order, page, limit) {
                    howText,
                    (case
                         when isnull(description) then ''
-                        when LENGTH(description) <= 80 then description
-                        else concat(substr(description, 1, 80), '...더보기') end)         as description,
+                        when CHAR_LENGTH(description) <= 70 then description
+                        else concat(substr(description, 1, 70), '...더보기') end)         as description,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
                             1)                                                         as score,
                    cast((truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
