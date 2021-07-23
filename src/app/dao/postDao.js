@@ -469,6 +469,20 @@ async function updateStar(connection, userId, postId, star) {
   return rows[0];
 }
 
+// 댓글 등록
+async function insertComment(connection, userId, postId, content) {
+  const query = `
+      INSERT INTO Comment(postId, userId, content)
+      VALUES (?, ?, ?);
+  `;
+  const params = [postId, userId, content];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
 module.exports = {
     getBanners,
     getPreviews,
@@ -485,5 +499,6 @@ module.exports = {
     deletePosts,
     checkStarExists,
     insertStar,
-    updateStar
+    updateStar,
+    insertComment
 };
