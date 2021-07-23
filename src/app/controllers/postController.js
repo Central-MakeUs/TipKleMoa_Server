@@ -519,11 +519,54 @@ exports.deletePosts = async function (req, res) {
             })
         } catch (err) {
             connection.release();
-            logger.error(`App - insertStar DB Connection error\n: ${JSON.stringify(err)}`);
+            logger.error(`App - insertComment DB Connection error\n: ${JSON.stringify(err)}`);
             return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
         }
     } catch (err) {
-        logger.error(`App - insertStar Query error\n: ${JSON.stringify(err)}`);
+        logger.error(`App - insertComment Query error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
+};
+
+/**
+ * API No. 31
+ * API Name : 특정 게시글 댓글 조회 API
+ * [GET] /posts/:postId/comments
+ */
+exports.getComments = async function (req, res) {
+    try {
+        try {
+            const userId = req.verifiedToken.userId;
+            const postId = req.params.postId;
+
+            if (!postId) return res.json({isSuccess: false, code: 2037, message: "postId를 입력해주세요."});
+
+            const connection = await pool.getConnection(async (conn) => conn);
+            const postRows = await postDao.checkPostExists(connection, postId);
+            if (postRows.length === 0) {
+                connection.release();
+                return res.json({
+                    isSuccess: false,
+                    code: 2008,
+                    message: "존재하지 않는 postId",
+                })
+            }
+
+            const commentRows = await postDao.getComments(connection, userId, postId);
+            connection.release();
+            return res.json({
+                isSuccess: true,
+                code: 1000,
+                message: "댓글 조회 성공",
+                result: commentRows
+            })
+        } catch (err) {
+            connection.release();
+            logger.error(`App - getComments DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - getComments error\n: ${JSON.stringify(err)}`);
         return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
     }
 };
