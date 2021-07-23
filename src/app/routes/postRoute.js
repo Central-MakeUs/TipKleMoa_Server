@@ -8,5 +8,6 @@ module.exports = function(app){
     app.post('/posts', jwtMiddleware, post.insertPost);
     app.get('/posts/:postId', jwtMiddleware, post.getPostDetail);
     app.post('/posts/:postId/reports', jwtMiddleware, post.insertReport);
+    app.post('/posts/:postId/stars', jwtMiddleware, post.insertStar);
     app.delete('/posts/:postId', jwtMiddleware, post.deletePosts);
 };
