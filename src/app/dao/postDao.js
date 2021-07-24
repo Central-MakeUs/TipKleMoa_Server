@@ -2,7 +2,7 @@
 async function getBanners(connection) {
     const getBannerQuery = `
         select postId,
-               whenText                            as title,
+               concat('[', (select categoryName from Category where categoryId = p.categoryId), '] ', whenText) as title,
                ifnull((select imgUrl
                        from PostImage i
                        where p.postId = i.postId
