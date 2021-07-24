@@ -220,7 +220,7 @@ exports.check = async function (req, res) {
                 present = 500;
                 goal = 1000;
             }
-            let rate = Math.round(((profileRows.point - present) / (goal - present) * 100) / 10) * 10;
+            let rate = Math.floor((profileRows.point - present) / (goal - present) * 100);
             let levelbar;
             if(rate < 20) {
                 levelbar = 0;
