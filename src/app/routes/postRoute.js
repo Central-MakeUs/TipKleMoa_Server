@@ -12,4 +12,5 @@ module.exports = function(app){
     app.post('/posts/:postId/stars', jwtMiddleware, post.insertStar);
     app.post('/posts/:postId/comments', jwtMiddleware, post.insertComment);
     app.delete('/posts/:postId', jwtMiddleware, post.deletePosts);
+    app.delete('/posts/comments/:commentId', jwtMiddleware, post.deleteComment);
 };

@@ -525,6 +525,34 @@ async function getComments(connection, userId, postId) {
     return rows;
 }
 
+// 댓글 존재 여부 확인
+async function checkCommentExists(connection, userId, commentId) {
+    const query = `
+        select *
+        from Comment
+        where userId=? and commentId=? and isDeleted='N'
+    `
+    const [rows] = await connection.query(
+        query,
+        [userId, commentId]
+    );
+    return rows;
+}
+
+// 댓글 삭제
+async function deleteComment(connection, commentId) {
+    const query = `
+        UPDATE Comment
+        SET isDeleted='Y'
+        WHERE commentId=?;
+    `
+    const [rows] = await connection.query(
+        query,
+        [commentId]
+    );
+    return rows;
+}
+
 module.exports = {
     getBanners,
     getPreviews,
@@ -543,5 +571,7 @@ module.exports = {
     insertStar,
     updateStar,
     insertComment,
-    getComments
+    getComments,
+    checkCommentExists,
+    deleteComment,
 };
