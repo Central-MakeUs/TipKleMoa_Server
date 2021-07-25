@@ -423,3 +423,61 @@ exports.deletePosts = async function (req, res) {
         return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
     }
 };
+
+/**
+ * API No. 21
+ * API Name : 별점 등록/수정 API
+ * [POST] /posts/:postId/stars
+ */
+ exports.insertStar = async function (req, res) {
+    try {
+        try {
+            const userId = req.verifiedToken.userId;
+            const postId = req.params.postId;
+            const {
+                star
+            } = req.body;
+
+            if (!postId) return res.json({isSuccess: false, code: 2037, message: "postId를 입력해주세요."});
+            if (!star) return res.json({isSuccess: false, code: 2042, message: "별점을 입력해주세요."});
+            if (!Number.isInteger(star) || star < 1 || star > 5) return res.json({isSuccess: false, code: 2043, message: "별점은 1이상 5이하의 정수만 가능합니다."});
+
+            const connection = await pool.getConnection(async (conn) => conn);
+            const postRows = await postDao.checkPostExists(connection, postId);
+            if (postRows.length === 0) {
+                connection.release();
+                return res.json({
+                    isSuccess: false,
+                    code: 2008,
+                    message: "존재하지 않는 postId",
+                })
+            }
+
+            const starRows = await postDao.checkStarExists(connection, userId, postId);
+            if(starRows.length === 0) {
+                await postDao.insertStar(connection, userId, postId, star);
+                connection.release();
+                return res.json({
+                    isSuccess: true,
+                    code: 1000,
+                    message: "별점 등록 성공",
+                })
+            } else {
+                await postDao.updateStar(connection, userId, postId, star);
+                connection.release();
+                return res.json({
+                    isSuccess: true,
+                    code: 1000,
+                    message: "별점 수정 성공",
+                })
+            }           
+        } catch (err) {
+            connection.release();
+            logger.error(`App - insertStar DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - insertStar Query error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
+};

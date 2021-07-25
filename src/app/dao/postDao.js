@@ -426,6 +426,49 @@ async function deletePosts(connection, postId) {
     return rows;
 }
 
+// 별점 존재 여부 확인
+async function checkStarExists(connection, userId, postId) {
+    const query = `
+        select *
+        from PostStar
+        where userId = ? and postId = ?;
+    `
+    const [rows] = await connection.query(
+        query,
+        [userId, postId]
+    );
+    return rows;
+}
+
+// 별점 등록
+async function insertStar(connection, userId, postId, star) {
+  const query = `
+      INSERT INTO PostStar(userId, postId, score)
+      VALUES (?, ?, ?);
+  `;
+  const params = [userId, postId, star];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
+// 별점 수정
+async function updateStar(connection, userId, postId, star) {
+  const query = `
+      UPDATE PostStar
+      SET score = ?
+      WHERE userId = ? and postId = ?
+  `;
+  const params = [star, userId, postId];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
 module.exports = {
     getBanners,
     getPreviews,
@@ -440,4 +483,7 @@ module.exports = {
     insertReport,
     checkPostAuthor,
     deletePosts,
+    checkStarExists,
+    insertStar,
+    updateStar
 };
