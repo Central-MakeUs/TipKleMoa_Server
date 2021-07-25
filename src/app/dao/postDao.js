@@ -469,6 +469,62 @@ async function updateStar(connection, userId, postId, star) {
   return rows[0];
 }
 
+// 댓글 등록
+async function insertComment(connection, userId, postId, content) {
+  const query = `
+      INSERT INTO Comment(postId, userId, content)
+      VALUES (?, ?, ?);
+  `;
+  const params = [postId, userId, content];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
+// 댓글 조회
+async function getComments(connection, userId, postId) {
+    const query = `
+        SELECT commentId,
+            userId,
+            (SELECT nickName FROM UserInfo WHERE UserInfo.userId = Comment.userId) AS nickName,
+            (SELECT levelImgUrl
+                FROM UserInfo
+                JOIN Level on UserInfo.level = Level.level
+                WHERE UserInfo.userId = Comment.userId) AS profileImgUrl,
+            content,
+            (CASE
+                WHEN timestampdiff(hour, createdAt, now()) <= 1 THEN '방금'
+                WHEN timestampdiff(hour, createdAt, now()) <= 12
+                    THEN concat(timestampdiff(hour, createdAt, now()) <= 12, '시간 전')
+                WHEN timestampdiff(hour, createdAt, now()) <= 24 THEN '오늘'
+                WHEN timestampdiff(day, createdAt, now()) = 1 THEN '어제'
+                WHEN timestampdiff(day, createdAt, now()) <= 30
+                    THEN concat(timestampdiff(day, createdAt, now()), '일 전')
+                WHEN timestampdiff(month, createdAt, now()) < 12
+                    THEN concat(timestampdiff(month, createdAt, now()), '달 전')
+                WHEN timestampdiff(month, createdAt, now()) > 12
+                    THEN concat(timestampdiff(year, createdAt, now()), '년 전')
+               END
+               ) AS createdAt,
+            (CASE
+                WHEN userId = ? THEN 'Y'
+                ELSE 'N'
+            END
+            ) AS isAuthor
+        FROM Comment
+        WHERE postId = ? and isDeleted='N'
+    `
+    const params = [userId, postId];
+    const [rows] = await connection.query(
+        query,
+        params
+    );
+
+    return rows;
+}
+
 module.exports = {
     getBanners,
     getPreviews,
@@ -485,5 +541,7 @@ module.exports = {
     deletePosts,
     checkStarExists,
     insertStar,
-    updateStar
+    updateStar,
+    insertComment,
+    getComments
 };
