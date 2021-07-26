@@ -515,6 +515,7 @@ async function getComments(connection, userId, postId) {
             ) AS isAuthor
         FROM Comment
         WHERE postId = ? and isDeleted='N'
+        ORDER BY Comment.createdAt DESC
     `
     const params = [userId, postId];
     const [rows] = await connection.query(
