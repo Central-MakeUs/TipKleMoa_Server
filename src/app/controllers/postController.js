@@ -335,6 +335,7 @@ exports.getPostDetail = async function (req, res) {
             if (!reason) return res.json({isSuccess: false, code: 2027, message: "신고 사유를 입력해주세요."});
 
             const connection = await pool.getConnection(async (conn) => conn);
+            await connection.beginTransaction();
             const postRows = await postDao.checkPostExists(connection, postId);
             if (postRows.length === 0) {
                 connection.release();
@@ -345,6 +346,10 @@ exports.getPostDetail = async function (req, res) {
                 })
             }
             const insertReportRow = await postDao.insertReport(connection, userId, postId, reason);
+
+            // 포인트 적용
+            const insertPointRow = await pointDao.insertPoint(connection, userId, 5, "reportPost");
+            await connection.commit();
             connection.release();
             return res.json({
                 isSuccess: true,
@@ -352,6 +357,7 @@ exports.getPostDetail = async function (req, res) {
                 message: "게시글 신고 성공"
             })
         } catch (err) {
+            await connection.rollback();
             connection.release();
             logger.error(`App - insertReport DB Connection error\n: ${JSON.stringify(err)}`);
             return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
@@ -455,7 +461,12 @@ exports.deletePosts = async function (req, res) {
 
             const starRows = await postDao.checkStarExists(connection, userId, postId);
             if(starRows.length === 0) {
+                await connection.beginTransaction();
                 await postDao.insertStar(connection, userId, postId, star);
+
+                // 포인트 적용
+                const insertPointRow = await pointDao.insertPoint(connection, userId, 6, "postStarred");
+                await connection.commit();
                 connection.release();
                 return res.json({
                     isSuccess: true,
@@ -472,6 +483,7 @@ exports.deletePosts = async function (req, res) {
                 })
             }
         } catch (err) {
+            await connection.rollback();
             connection.release();
             logger.error(`App - insertStar DB Connection error\n: ${JSON.stringify(err)}`);
             return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
@@ -500,6 +512,7 @@ exports.deletePosts = async function (req, res) {
             if (!content) return res.json({isSuccess: false, code: 2044, message: "댓글을 입력해주세요."});
 
             const connection = await pool.getConnection(async (conn) => conn);
+            await connection.beginTransaction();
             const postRows = await postDao.checkPostExists(connection, postId);
             if (postRows.length === 0) {
                 connection.release();
@@ -511,6 +524,10 @@ exports.deletePosts = async function (req, res) {
             }
 
             await postDao.insertComment(connection, userId, postId, content);
+
+            // 포인트 적용
+            const insertPointRow = await pointDao.insertPoint(connection, userId, 6, "postCommented");
+            await connection.commit();
             connection.release();
             return res.json({
                 isSuccess: true,
@@ -518,6 +535,7 @@ exports.deletePosts = async function (req, res) {
                 message: "댓글 등록 성공",
             })
         } catch (err) {
+            await connection.rollback();
             connection.release();
             logger.error(`App - insertComment DB Connection error\n: ${JSON.stringify(err)}`);
             return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
