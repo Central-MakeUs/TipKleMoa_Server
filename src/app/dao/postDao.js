@@ -288,7 +288,7 @@ async function getPostDetail(connection, postId, userId) {
                         1)                                                         as score,
                cast((truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
                               0)) as unsigned)                                     as star,
-               (select if(EXISTS(select * from PostStar where Post.postId = PostStar.postId and Post.userId = ?), 'Y',
+               (select if(EXISTS(select * from PostStar where Post.postId = PostStar.postId and PostStar.userId = ?), 'Y',
                           'N'))                                                    as isStarred,
                (select if(EXISTS(select *
                                  from FolderPost FP
