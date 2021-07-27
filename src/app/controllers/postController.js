@@ -362,6 +362,7 @@ exports.getPostDetail = async function (req, res) {
             if (!reason) return res.json({isSuccess: false, code: 2027, message: "신고 사유를 입력해주세요."});
 
             const connection = await pool.getConnection(async (conn) => conn);
+            await connection.beginTransaction();
             const postRows = await postDao.checkPostExists(connection, postId);
             if (postRows.length === 0) {
                 connection.release();
@@ -372,6 +373,10 @@ exports.getPostDetail = async function (req, res) {
                 })
             }
             const insertReportRow = await postDao.insertReport(connection, userId, postId, reason);
+
+            // 포인트 적용
+            const insertPointRow = await pointDao.insertPoint(connection, userId, 5, "reportPost");
+            await connection.commit();
             connection.release();
             return res.json({
                 isSuccess: true,
@@ -379,6 +384,7 @@ exports.getPostDetail = async function (req, res) {
                 message: "게시글 신고 성공"
             })
         } catch (err) {
+            await connection.rollback();
             connection.release();
             logger.error(`App - insertReport DB Connection error\n: ${JSON.stringify(err)}`);
             return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
@@ -447,6 +453,207 @@ exports.deletePosts = async function (req, res) {
         }
     } catch (err) {
         logger.error(`App - deletePosts error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
+};
+
+/**
+ * API No. 21
+ * API Name : 별점 등록/수정 API
+ * [POST] /posts/:postId/stars
+ */
+ exports.insertStar = async function (req, res) {
+    try {
+        try {
+            const userId = req.verifiedToken.userId;
+            const postId = req.params.postId;
+            const {
+                star
+            } = req.body;
+
+            if (!postId) return res.json({isSuccess: false, code: 2037, message: "postId를 입력해주세요."});
+            if (!star) return res.json({isSuccess: false, code: 2042, message: "별점을 입력해주세요."});
+            if (!Number.isInteger(star) || star < 1 || star > 5) return res.json({isSuccess: false, code: 2043, message: "별점은 1이상 5이하의 정수만 가능합니다."});
+
+            const connection = await pool.getConnection(async (conn) => conn);
+            const postRows = await postDao.checkPostExists(connection, postId);
+            if (postRows.length === 0) {
+                connection.release();
+                return res.json({
+                    isSuccess: false,
+                    code: 2008,
+                    message: "존재하지 않는 postId",
+                })
+            }
+
+            const starRows = await postDao.checkStarExists(connection, userId, postId);
+            if(starRows.length === 0) {
+                await connection.beginTransaction();
+                await postDao.insertStar(connection, userId, postId, star);
+
+                // 포인트 적용
+                const insertPointRow = await pointDao.insertPoint(connection, userId, 6, "postStarred");
+                await connection.commit();
+                connection.release();
+                return res.json({
+                    isSuccess: true,
+                    code: 1000,
+                    message: "별점 등록 성공",
+                })
+            } else {
+                await postDao.updateStar(connection, userId, postId, star);
+                connection.release();
+                return res.json({
+                    isSuccess: true,
+                    code: 1000,
+                    message: "별점 수정 성공",
+                })
+            }
+        } catch (err) {
+            await connection.rollback();
+            connection.release();
+            logger.error(`App - insertStar DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - insertStar Query error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
+};
+
+/**
+ * API No. 30
+ * API Name : 댓글 등록 API
+ * [POST] /posts/:postId/comments
+ */
+ exports.insertComment = async function (req, res) {
+    try {
+        try {
+            const userId = req.verifiedToken.userId;
+            const postId = req.params.postId;
+            const {
+                content
+            } = req.body;
+
+            if (!postId) return res.json({isSuccess: false, code: 2037, message: "postId를 입력해주세요."});
+            if (!content) return res.json({isSuccess: false, code: 2044, message: "댓글을 입력해주세요."});
+
+            const connection = await pool.getConnection(async (conn) => conn);
+            await connection.beginTransaction();
+            const postRows = await postDao.checkPostExists(connection, postId);
+            if (postRows.length === 0) {
+                connection.release();
+                return res.json({
+                    isSuccess: false,
+                    code: 2008,
+                    message: "존재하지 않는 postId",
+                })
+            }
+
+            await postDao.insertComment(connection, userId, postId, content);
+
+            // 포인트 적용
+            const insertPointRow = await pointDao.insertPoint(connection, userId, 6, "postCommented");
+            await connection.commit();
+            connection.release();
+            return res.json({
+                isSuccess: true,
+                code: 1000,
+                message: "댓글 등록 성공",
+            })
+        } catch (err) {
+            await connection.rollback();
+            connection.release();
+            logger.error(`App - insertComment DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - insertComment Query error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
+};
+
+/**
+ * API No. 31
+ * API Name : 특정 게시글 댓글 조회 API
+ * [GET] /posts/:postId/comments
+ */
+exports.getComments = async function (req, res) {
+    try {
+        try {
+            const userId = req.verifiedToken.userId;
+            const postId = req.params.postId;
+
+            if (!postId) return res.json({isSuccess: false, code: 2037, message: "postId를 입력해주세요."});
+
+            const connection = await pool.getConnection(async (conn) => conn);
+            const postRows = await postDao.checkPostExists(connection, postId);
+            if (postRows.length === 0) {
+                connection.release();
+                return res.json({
+                    isSuccess: false,
+                    code: 2008,
+                    message: "존재하지 않는 postId",
+                })
+            }
+
+            const commentRows = await postDao.getComments(connection, userId, postId);
+            connection.release();
+            return res.json({
+                isSuccess: true,
+                code: 1000,
+                message: "댓글 조회 성공",
+                result: commentRows
+            })
+        } catch (err) {
+            connection.release();
+            logger.error(`App - getComments DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - getComments error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
+};
+
+/**
+ * API No. 36
+ * API Name : 댓글 삭제 API
+ * [DELETE] /posts/comments/:commentId
+ */
+exports.deleteComment = async function (req, res) {
+    try {
+        try {
+            const userId = req.verifiedToken.userId;
+            const commentId = req.params.commentId;
+
+            if (!commentId) return res.json({isSuccess: false, code: 2046, message: "commentId를 입력해주세요."});
+
+            const connection = await pool.getConnection(async (conn) => conn);
+            const commentRows = await postDao.checkCommentExists(connection, userId, commentId);
+            if (commentRows.length === 0) {
+                connection.release();
+                return res.json({
+                    isSuccess: false,
+                    code: 2047,
+                    message: "존재하지 않거나, 삭제 권한이 없는 댓글입니다.",
+                });
+            }
+
+            await postDao.deleteComment(connection,commentId);
+            connection.release();
+            return res.json({
+                isSuccess: true,
+                code: 1000,
+                message: "댓글 삭제 성공",
+            });
+        } catch (err) {
+            connection.release();
+            logger.error(`App - deleteComment DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - deleteComment error\n: ${JSON.stringify(err)}`);
         return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
     }
 };

@@ -288,7 +288,7 @@ async function getPostDetail(connection, postId, userId) {
                         1)                                                         as score,
                cast((truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
                               0)) as unsigned)                                     as star,
-               (select if(EXISTS(select * from PostStar where Post.postId = PostStar.postId and Post.userId = ?), 'Y',
+               (select if(EXISTS(select * from PostStar where Post.postId = PostStar.postId and PostStar.userId = ?), 'Y',
                           'N'))                                                    as isStarred,
                (select if(EXISTS(select *
                                  from FolderPost FP
@@ -426,6 +426,134 @@ async function deletePosts(connection, postId) {
     return rows;
 }
 
+// 별점 존재 여부 확인
+async function checkStarExists(connection, userId, postId) {
+    const query = `
+        select *
+        from PostStar
+        where userId = ? and postId = ?;
+    `
+    const [rows] = await connection.query(
+        query,
+        [userId, postId]
+    );
+    return rows;
+}
+
+// 별점 등록
+async function insertStar(connection, userId, postId, star) {
+  const query = `
+      INSERT INTO PostStar(userId, postId, score)
+      VALUES (?, ?, ?);
+  `;
+  const params = [userId, postId, star];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
+// 별점 수정
+async function updateStar(connection, userId, postId, star) {
+  const query = `
+      UPDATE PostStar
+      SET score = ?
+      WHERE userId = ? and postId = ?
+  `;
+  const params = [star, userId, postId];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
+// 댓글 등록
+async function insertComment(connection, userId, postId, content) {
+  const query = `
+      INSERT INTO Comment(postId, userId, content)
+      VALUES (?, ?, ?);
+  `;
+  const params = [postId, userId, content];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
+// 댓글 조회
+async function getComments(connection, userId, postId) {
+    const query = `
+        SELECT commentId,
+            userId,
+            (SELECT nickName FROM UserInfo WHERE UserInfo.userId = Comment.userId) AS nickName,
+            (SELECT levelImgUrl
+                FROM UserInfo
+                JOIN Level on UserInfo.level = Level.level
+                WHERE UserInfo.userId = Comment.userId) AS profileImgUrl,
+            content,
+            (CASE
+                WHEN timestampdiff(hour, createdAt, now()) <= 1 THEN '방금'
+                WHEN timestampdiff(hour, createdAt, now()) <= 12
+                    THEN concat(timestampdiff(hour, createdAt, now()) <= 12, '시간 전')
+                WHEN timestampdiff(hour, createdAt, now()) <= 24 THEN '오늘'
+                WHEN timestampdiff(day, createdAt, now()) = 1 THEN '어제'
+                WHEN timestampdiff(day, createdAt, now()) <= 30
+                    THEN concat(timestampdiff(day, createdAt, now()), '일 전')
+                WHEN timestampdiff(month, createdAt, now()) < 12
+                    THEN concat(timestampdiff(month, createdAt, now()), '달 전')
+                WHEN timestampdiff(month, createdAt, now()) > 12
+                    THEN concat(timestampdiff(year, createdAt, now()), '년 전')
+               END
+               ) AS createdAt,
+            (CASE
+                WHEN userId = ? THEN 'Y'
+                ELSE 'N'
+            END
+            ) AS isAuthor
+        FROM Comment
+        WHERE postId = ? and isDeleted='N'
+        ORDER BY Comment.createdAt DESC
+    `
+    const params = [userId, postId];
+    const [rows] = await connection.query(
+        query,
+        params
+    );
+
+    return rows;
+}
+
+// 댓글 존재 여부 확인
+async function checkCommentExists(connection, userId, commentId) {
+    const query = `
+        select *
+        from Comment
+        where userId=? and commentId=? and isDeleted='N'
+    `
+    const [rows] = await connection.query(
+        query,
+        [userId, commentId]
+    );
+    return rows;
+}
+
+// 댓글 삭제
+async function deleteComment(connection, commentId) {
+    const query = `
+        UPDATE Comment
+        SET isDeleted='Y'
+        WHERE commentId=?;
+    `
+    const [rows] = await connection.query(
+        query,
+        [commentId]
+    );
+    return rows;
+}
+
 module.exports = {
     getBanners,
     getPreviews,
@@ -440,4 +568,11 @@ module.exports = {
     insertReport,
     checkPostAuthor,
     deletePosts,
+    checkStarExists,
+    insertStar,
+    updateStar,
+    insertComment,
+    getComments,
+    checkCommentExists,
+    deleteComment,
 };
