@@ -396,6 +396,57 @@ exports.getPostDetail = async function (req, res) {
 };
 
 /**
+ * API No. 38
+ * API Name : 댓글 신고 API
+ * [POST] /posts/comments/:commentId/reports
+ */
+exports.reportComment = async function (req, res) {
+    try {
+        try {
+            const commentId = req.params.commentId;
+            const userId = req.verifiedToken.userId;
+            const {
+                reason
+            } = req.body;
+
+            if (!commentId) return res.json({isSuccess: false, code: 2046, message: "commentId를 입력해주세요."});
+            if (!reason) return res.json({isSuccess: false, code: 2027, message: "신고 사유를 입력해주세요."});
+
+            const connection = await pool.getConnection(async (conn) => conn);
+            await connection.beginTransaction();
+            const commentRows = await postDao.checkCommentValid(connection, commentId);
+            if (commentRows.length === 0) {
+                connection.release();
+                return res.json({
+                    isSuccess: false,
+                    code: 2052,
+                    message: "존재하지 않는 commentId",
+                })
+            }
+            const insertReportRow = await postDao.reportComment(connection, userId, commentId, reason);
+
+            // 포인트 적용
+            const insertPointRow = await pointDao.insertPoint(connection, userId, 5, "reportComment");
+            await connection.commit();
+            connection.release();
+            return res.json({
+                isSuccess: true,
+                code: 1000,
+                message: "댓글 신고 성공"
+            })
+        } catch (err) {
+            await connection.rollback();
+            connection.release();
+            logger.error(`App - reportComment DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - reportComment error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
+};
+
+/**
  * API No.34
  * API Name : 게시글 삭제 API
  * [DELETE] /posts/:postId

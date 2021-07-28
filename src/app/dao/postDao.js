@@ -399,6 +399,20 @@ async function insertReport(connection, userId, postId, reason) {
   return rows[0];
 }
 
+// 댓글 신고
+async function reportComment(connection, userId, commentId, reason) {
+    const query = `
+      INSERT INTO ReportedComment(userId, commentId, reason)
+      VALUES (?, ?, ?);
+  `;
+    const params = [userId, commentId, reason];
+    const rows = await connection.query(
+        query,
+        params
+    );
+    return rows[0];
+}
+
 async function checkPostAuthor(connection, postId, userId) {
     const query = `
         select *
@@ -526,7 +540,7 @@ async function getComments(connection, userId, postId) {
     return rows;
 }
 
-// 댓글 존재 여부 확인
+// 댓글 삭제 권한 확인
 async function checkCommentExists(connection, userId, commentId) {
     const query = `
         select *
@@ -554,6 +568,20 @@ async function deleteComment(connection, commentId) {
     return rows;
 }
 
+// 댓글 존재 여부 확인
+async function checkCommentValid(connection, commentId) {
+    const query = `
+        select *
+        from Comment
+        where commentId=? and isDeleted='N'
+    `
+    const [rows] = await connection.query(
+        query,
+        [commentId]
+    );
+    return rows;
+}
+
 module.exports = {
     getBanners,
     getPreviews,
@@ -566,6 +594,7 @@ module.exports = {
     insertPost,
     insertImgUrl,
     insertReport,
+    reportComment,
     checkPostAuthor,
     deletePosts,
     checkStarExists,
@@ -575,4 +604,5 @@ module.exports = {
     getComments,
     checkCommentExists,
     deleteComment,
+    checkCommentValid,
 };
