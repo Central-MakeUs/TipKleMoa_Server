@@ -7,6 +7,7 @@ module.exports = function(app){
     app.get('/auto-login', jwtMiddleware, user.check);
     app.get('/users/profiles', jwtMiddleware, user.getProfile);
     app.patch('/users/nickname', jwtMiddleware, user.updateNickname);
+    app.patch('/users/profileImg', jwtMiddleware, user.updateProfileImg);
     app.patch('/logout', jwtMiddleware, user.logout);
     app.delete('/users', jwtMiddleware, user.deleteUser);
 };

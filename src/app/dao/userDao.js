@@ -75,6 +75,21 @@ async function updateNickname(connection, userId, nickName) {
   return rows[0];
 }
 
+// 프로필 사진 수정
+async function updateProfileImg(connection, userId, imgUrl){
+  const query = `
+    UPDATE UserInfo
+    SET profileImg = ?
+    WHERE userId = ?
+  `;
+  const params = [imgUrl, userId];
+  const rows = await connection.query(
+      query,
+      params
+  );
+  return rows[0];
+}
+
 // 로그아웃
 async function logout(connection, userId) {
   const query = `
@@ -157,5 +172,6 @@ module.exports = {
   deleteUser,
   insertBlacklist,
   checkBlacklist,
-  deleteBlacklist
+  deleteBlacklist,
+  updateProfileImg,
 };
