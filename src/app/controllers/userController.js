@@ -6,6 +6,7 @@ const regexEmail = require('regex-email');
 const crypto = require('crypto');
 const secret_config = require('../../../config/secret');
 
+const bookmarkDao = require('../dao/bookmarkDao');
 const userDao = require('../dao/userDao');
 const { constants } = require('buffer');
 
@@ -219,7 +220,7 @@ exports.check = async function (req, res) {
                 present = 500;
                 goal = 1000;
             }
-            let rate = Math.round(((profileRows.point - present) / (goal - present) * 100) / 10) * 10;
+            let rate = Math.floor((profileRows.point - present) / (goal - present) * 100);
             let levelbar;
             if(rate < 20) {
                 levelbar = 0;
@@ -240,7 +241,7 @@ exports.check = async function (req, res) {
                 profileImgUrl: profileRows.profileImgUrl,
                 nickName: profileRows.nickName,
                 levelbar: levelbar,
-                achievement: profileRows.point + " / " + goal
+                achievement: profileRows.point + " / " + goal + "p"
             }
             connection.release();
             return res.json({

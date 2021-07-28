@@ -146,6 +146,12 @@ exports.getPosts = async function (req, res) {
                         imgList.push(imgRows[j].imgUrl);
                     }
                     searchRows[i].imgUrl = imgList;
+                    if(searchRows[i].userId === userId){
+                        searchRows[i].isAuthor = "Y";
+                    }
+                    else{
+                        searchRows[i].isAuthor = "N";
+                    }
                 }
 
                 await searchDao.insertSearchKeyword(connection, userId, search);
@@ -177,6 +183,12 @@ exports.getPosts = async function (req, res) {
                         imgList.push(imgRows[j].imgUrl);
                     }
                     postRows[i].imgUrl = imgList;
+                    if(postRows[i].userId === userId){
+                        postRows[i].isAuthor = "Y";
+                    }
+                    else{
+                        postRows[i].isAuthor = "N";
+                    }
                 }
 
                 connection.release();
@@ -233,6 +245,12 @@ exports.getPostDetail = async function (req, res) {
 
             const postDetailRow = await postDao.getPostDetail(connection, postId, userId);
             const imgRows = await postDao.getPostImages(connection, postDetailRow[0].postId)
+            if(userId==postDetailRow[0].userId){
+                postDetailRow[0].isAuthor = "Y";
+            }
+            else{
+                postDetailRow[0].isAuthor = "N";
+            }
             const imgList = [];
             for(let j=0; j<imgRows.length; j++){
                 imgList.push(imgRows[j].imgUrl);
@@ -277,7 +295,7 @@ exports.getPostDetail = async function (req, res) {
             if (img > 5) return res.json({isSuccess: false, code: 2025, message: "이미지 URL을 5개 이하로 입력해주세요."});
 
             for(let i=0; i<img.length; i++) {
-                if (!regUrlType.test(img[i][0])) return res.json({
+                if (!regUrlType.test(img[i])) return res.json({
                     isSuccess: false,
                     code: 2026,
                     message: "이미지 URL 형식이 잘못되었습니다."
@@ -285,13 +303,22 @@ exports.getPostDetail = async function (req, res) {
             }
 
             const connection = await pool.getConnection(async (conn) => conn);
+            const categoryRows = await categoryDao.checkCategoryExists(connection, category);
+            if (categoryRows.length === 0) {
+                return res.json({
+                    isSuccess: false,
+                    code: 2007,
+                    message: "존재하지 않는 category",
+                })
+            }
+
             await connection.beginTransaction();
             const insertPostRow = await postDao.insertPost(connection, userId, category, whenText, howText, description);
 
             postId = insertPostRow.insertId;
             let insertImgUrl;
             for(let i=0; i<img.length; i++) {
-                insertImgUrl = await postDao.insertImgUrl(connection, postId, img[i][0], img[i][1]);
+                insertImgUrl = await postDao.insertImgUrl(connection, postId, img[i]);
             }
 
             // 포인트 적용
@@ -364,6 +391,57 @@ exports.getPostDetail = async function (req, res) {
         }
     } catch (err) {
         logger.error(`App - insertReport error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
+};
+
+/**
+ * API No. 38
+ * API Name : 댓글 신고 API
+ * [POST] /posts/comments/:commentId/reports
+ */
+exports.reportComment = async function (req, res) {
+    try {
+        try {
+            const commentId = req.params.commentId;
+            const userId = req.verifiedToken.userId;
+            const {
+                reason
+            } = req.body;
+
+            if (!commentId) return res.json({isSuccess: false, code: 2046, message: "commentId를 입력해주세요."});
+            if (!reason) return res.json({isSuccess: false, code: 2027, message: "신고 사유를 입력해주세요."});
+
+            const connection = await pool.getConnection(async (conn) => conn);
+            await connection.beginTransaction();
+            const commentRows = await postDao.checkCommentValid(connection, commentId);
+            if (commentRows.length === 0) {
+                connection.release();
+                return res.json({
+                    isSuccess: false,
+                    code: 2052,
+                    message: "존재하지 않는 commentId",
+                })
+            }
+            const insertReportRow = await postDao.reportComment(connection, userId, commentId, reason);
+
+            // 포인트 적용
+            const insertPointRow = await pointDao.insertPoint(connection, userId, 5, "reportComment");
+            await connection.commit();
+            connection.release();
+            return res.json({
+                isSuccess: true,
+                code: 1000,
+                message: "댓글 신고 성공"
+            })
+        } catch (err) {
+            await connection.rollback();
+            connection.release();
+            logger.error(`App - reportComment DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - reportComment error\n: ${JSON.stringify(err)}`);
         return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
     }
 };

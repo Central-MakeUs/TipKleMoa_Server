@@ -2,7 +2,7 @@
 async function getBanners(connection) {
     const getBannerQuery = `
         select postId,
-               whenText                            as title,
+               concat('[', (select categoryName from Category where categoryId = p.categoryId), '] ', whenText) as title,
                ifnull((select imgUrl
                        from PostImage i
                        where p.postId = i.postId
@@ -80,8 +80,8 @@ async function getPosts(connection, categoryName, order, page, limit) {
                    howText,
                    (case
                         when isnull(description) then ''
-                        when LENGTH(description) <= 80 then description
-                        else concat(substr(description, 1, 80), '...더보기') end)         as description,
+                        when CHAR_LENGTH(description) <= 70 then description
+                        else concat(substr(description, 1, 70), '...더보기') end)         as description,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
                             1)                                                         as score,
                    cast((truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
@@ -118,8 +118,8 @@ async function getPosts(connection, categoryName, order, page, limit) {
                    howText,
                    (case
                         when isnull(description) then ''
-                        when LENGTH(description) <= 80 then description
-                        else concat(substr(description, 1, 80), '...더보기') end)         as description,
+                        when CHAR_LENGTH(description) <= 70 then description
+                        else concat(substr(description, 1, 70), '...더보기') end)         as description,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
                             1)                                                         as score,
                    cast((truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
@@ -173,8 +173,8 @@ async function searchPosts(connection, search, order, page, limit) {
                    howText,
                    (case
                         when isnull(description) then ''
-                        when LENGTH(description) <= 80 then description
-                        else concat(substr(description, 1, 80), '...더보기') end)         as description,
+                        when CHAR_LENGTH(description) <= 70 then description
+                        else concat(substr(description, 1, 70), '...더보기') end)         as description,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
                             1)                                                         as score,
                    cast((truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
@@ -214,8 +214,8 @@ async function searchPosts(connection, search, order, page, limit) {
                    howText,
                    (case
                         when isnull(description) then ''
-                        when LENGTH(description) <= 80 then description
-                        else concat(substr(description, 1, 80), '...더보기') end)         as description,
+                        when CHAR_LENGTH(description) <= 70 then description
+                        else concat(substr(description, 1, 70), '...더보기') end)         as description,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
                             1)                                                         as score,
                    cast((truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
@@ -296,7 +296,7 @@ async function getPostDetail(connection, postId, userId) {
                                  where userId = ?
                                    and postId = Post.postId), 'Y',
                           'N'))                                                    as isBookMarked,
-               (select COUNT(*) from Comment where Comment.postId = Post.postId)   as commentCount
+               (select COUNT(*) from Comment where Comment.postId = Post.postId and Comment.isDeleted='N')   as commentCount
         from Post
         where postId = ?;
     `;
@@ -372,12 +372,12 @@ async function insertPost(connection, userId, category, whenText, howText, descr
 }
 
 // 이미지 URL 등록
-async function insertImgUrl(connection, postId, imgUrl, imgText) {
+async function insertImgUrl(connection, postId, imgUrl) {
   const query = `
-      INSERT INTO PostImage(postId, imgUrl, imgText)
-      VALUES (?, ?, ?);
+      INSERT INTO PostImage(postId, imgUrl)
+      VALUES (?, ?);
   `;
-  const params = [postId, imgUrl, imgText];
+  const params = [postId, imgUrl];
   const rows = await connection.query(
     query,
     params
@@ -397,6 +397,20 @@ async function insertReport(connection, userId, postId, reason) {
     params
   );
   return rows[0];
+}
+
+// 댓글 신고
+async function reportComment(connection, userId, commentId, reason) {
+    const query = `
+      INSERT INTO ReportedComment(userId, commentId, reason)
+      VALUES (?, ?, ?);
+  `;
+    const params = [userId, commentId, reason];
+    const rows = await connection.query(
+        query,
+        params
+    );
+    return rows[0];
 }
 
 async function checkPostAuthor(connection, postId, userId) {
@@ -526,7 +540,7 @@ async function getComments(connection, userId, postId) {
     return rows;
 }
 
-// 댓글 존재 여부 확인
+// 댓글 삭제 권한 확인
 async function checkCommentExists(connection, userId, commentId) {
     const query = `
         select *
@@ -554,6 +568,20 @@ async function deleteComment(connection, commentId) {
     return rows;
 }
 
+// 댓글 존재 여부 확인
+async function checkCommentValid(connection, commentId) {
+    const query = `
+        select *
+        from Comment
+        where commentId=? and isDeleted='N'
+    `
+    const [rows] = await connection.query(
+        query,
+        [commentId]
+    );
+    return rows;
+}
+
 module.exports = {
     getBanners,
     getPreviews,
@@ -566,6 +594,7 @@ module.exports = {
     insertPost,
     insertImgUrl,
     insertReport,
+    reportComment,
     checkPostAuthor,
     deletePosts,
     checkStarExists,
@@ -575,4 +604,5 @@ module.exports = {
     getComments,
     checkCommentExists,
     deleteComment,
+    checkCommentValid,
 };
