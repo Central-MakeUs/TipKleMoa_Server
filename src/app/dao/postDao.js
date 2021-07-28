@@ -296,7 +296,7 @@ async function getPostDetail(connection, postId, userId) {
                                  where userId = ?
                                    and postId = Post.postId), 'Y',
                           'N'))                                                    as isBookMarked,
-               (select COUNT(*) from Comment where Comment.postId = Post.postId)   as commentCount
+               (select COUNT(*) from Comment where Comment.postId = Post.postId and Comment.isDeleted='N')   as commentCount
         from Post
         where postId = ?;
     `;
