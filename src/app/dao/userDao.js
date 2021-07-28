@@ -46,7 +46,7 @@ async function insertUserCategory(connection, userId, category) {
 // 마이페이지 조회
 async function getProfile(connection, userId) {
   const query = `
-    SELECT Level.level, levelName, profileImgUrl, nickName, point
+    SELECT Level.level, levelName, ifnull(profileImg, profileImgUrl) as profileImgUrl, nickName, point
     FROM UserInfo
     JOIN Level
     ON UserInfo.level = Level.level
