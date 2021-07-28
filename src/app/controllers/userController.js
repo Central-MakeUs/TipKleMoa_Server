@@ -294,6 +294,39 @@ exports.check = async function (req, res) {
 };
 
 /**
+ * API No. 38
+ * API Name : 프로필 사진 등록/수정 API
+ * [PATCH] /users/profileImg
+ */
+
+exports.updateProfileImg = async function (req, res) {
+    try {
+        try {
+            const userId = req.verifiedToken.userId;
+            const imgUrl = req.body.imgUrl;
+            if(!imgUrl) return res.json({isSuccess: false, code: 2024, message: "이미지 URL을 입력해주세요."});
+
+            const connection = await pool.getConnection(async (conn) => conn);
+            await userDao.updateProfileImg(connection, userId, imgUrl);
+            connection.release();
+            return res.json({
+                isSuccess: true,
+                code: 1000,
+                message: "프로필 이미지 등록 성공"
+            })
+        } catch (err) {
+            await connection.rollback();
+            connection.release();
+            logger.error(`App - updateProfileImg DB Connection error\n: ${JSON.stringify(err)}`);
+            return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
+        }
+    } catch (err) {
+        logger.error(`App - updateProfileImg error\n: ${JSON.stringify(err)}`);
+        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
+    }
+};
+
+/**
  * API No. 32
  * API Name : 로그아웃 API
  * [PATCH] /logout
