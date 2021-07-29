@@ -296,7 +296,7 @@ exports.check = async function (req, res) {
 
 /**
  * API No. 38
- * API Name : 프로필 사진 등록/수정 API
+ * API Name : 프로필 사진 등록/수정/삭제 API
  * [PATCH] /users/profileImg
  */
 
@@ -305,8 +305,7 @@ exports.updateProfileImg = async function (req, res) {
         try {
             const userId = req.verifiedToken.userId;
             const imgUrl = req.body.imgUrl;
-            if(!imgUrl) return res.json({isSuccess: false, code: 2024, message: "이미지 URL을 입력해주세요."});
-            if (!regUrlType.test(imgUrl)) return res.json({
+            if (imgUrl && !regUrlType.test(imgUrl)) return res.json({
                 isSuccess: false,
                 code: 2026,
                 message: "이미지 URL 형식이 잘못되었습니다."
@@ -318,7 +317,7 @@ exports.updateProfileImg = async function (req, res) {
             return res.json({
                 isSuccess: true,
                 code: 1000,
-                message: "프로필 이미지 등록 성공"
+                message: "프로필 이미지 등록/수정/삭제 성공"
             })
         } catch (err) {
             await connection.rollback();
