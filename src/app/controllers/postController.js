@@ -92,6 +92,11 @@ exports.getPreviews = async function (req, res) {
     }
 };
 
+/**
+ * API No.9
+ * API Name : 게시물 목록 조회
+ * [GET] /posts?categoryName=&order=&search=&page=&limit=
+ */
 exports.getPosts = async function (req, res) {
     try {
         try {
@@ -138,7 +143,7 @@ exports.getPosts = async function (req, res) {
 
             const connection = await pool.getConnection(async (conn) => conn);
             if (search) {
-                const searchRows = await postDao.searchPosts(connection, search, order, Number(limit)*(Number(page)-1), Number(limit));
+                const searchRows = await postDao.searchPosts(connection, search, userId, order, Number(limit)*(Number(page)-1), Number(limit));
                 for(let i=0; i<searchRows.length; i++){
                     const imgRows = await postDao.getPostImages(connection, searchRows[i].postId)
                     const imgList = [];
@@ -175,7 +180,7 @@ exports.getPosts = async function (req, res) {
                     });
                 }
 
-                const postRows = await postDao.getPosts(connection, categoryName, order, Number(limit)*(Number(page)-1), Number(limit));
+                const postRows = await postDao.getPosts(connection, categoryName, userId, order, Number(limit)*(Number(page)-1), Number(limit));
                 for(let i=0; i<postRows.length; i++){
                     const imgRows = await postDao.getPostImages(connection, postRows[i].postId)
                     const imgList = [];
