@@ -695,8 +695,11 @@ exports.deleteComment = async function (req, res) {
                     message: "존재하지 않거나, 삭제 권한이 없는 댓글입니다.",
                 });
             }
-
+            await connection.beginTransaction();
             await postDao.deleteComment(connection,commentId);
+            await pointDao.insertPoint(connection, userId, -6 , "deleteComment");
+
+            await connection.commit();
             connection.release();
             return res.json({
                 isSuccess: true,
@@ -704,6 +707,7 @@ exports.deleteComment = async function (req, res) {
                 message: "댓글 삭제 성공",
             });
         } catch (err) {
+            await connection.rollback();
             connection.release();
             logger.error(`App - deleteComment DB Connection error\n: ${JSON.stringify(err)}`);
             return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
