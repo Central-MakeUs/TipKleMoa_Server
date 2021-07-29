@@ -3,6 +3,7 @@ const {logger} = require('../../../config/winston');
 
 const jwt = require('jsonwebtoken');
 const regexEmail = require('regex-email');
+const regUrlType = /(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
 const crypto = require('crypto');
 const secret_config = require('../../../config/secret');
 
@@ -305,6 +306,11 @@ exports.updateProfileImg = async function (req, res) {
             const userId = req.verifiedToken.userId;
             const imgUrl = req.body.imgUrl;
             if(!imgUrl) return res.json({isSuccess: false, code: 2024, message: "이미지 URL을 입력해주세요."});
+            if (!regUrlType.test(imgUrl)) return res.json({
+                isSuccess: false,
+                code: 2026,
+                message: "이미지 URL 형식이 잘못되었습니다."
+            });
 
             const connection = await pool.getConnection(async (conn) => conn);
             await userDao.updateProfileImg(connection, userId, imgUrl);
