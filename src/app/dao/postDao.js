@@ -1,5 +1,5 @@
 // 배너 목록 조회
-async function getBanners(connection) {
+async function getBanners(connection, userId) {
     const getBannerQuery = `
         select postId,
                concat('[', (select categoryName from Category where categoryId = p.categoryId), '] ', whenText) as title,
@@ -8,7 +8,7 @@ async function getBanners(connection) {
                        where p.postId = i.postId
                        order by imgId limit 1),'') as thumbnailUrl
         from Post p
-        where p.isDeleted = 'N'
+        where p.isDeleted = 'N' and postId not in (select postId from ReportedPost where userId=?)
         order by (select count(*)
                   from PostHits h
                   where h.postId = p.postId) desc,
@@ -17,13 +17,14 @@ async function getBanners(connection) {
                  (select count(*) from Comment c where c.postId = p.postId) desc limit 4;
     `;
     const [Rows] = await connection.query(
-        getBannerQuery
+        getBannerQuery,
+        [userId]
     );
     return Rows;
 }
 
 // 미리보기 조회
-async function getPreviews(connection, categoryName, order) {
+async function getPreviews(connection, categoryName, order, userId) {
     let getPreviewsQuery;
     if (order == 'recent') {
         getPreviewsQuery = `
@@ -35,6 +36,7 @@ async function getPreviews(connection, categoryName, order) {
                            order by imgId limit 1),'') as thumbnailUrl
             from Post p
             where p.isDeleted='N' and categoryId = (select categoryId from Category where categoryName = ?)
+              and postId not in (select postId from ReportedPost where userId=?)
             order by createdAt desc limit 4;
         `
     } else if (order == 'popular') {
@@ -47,6 +49,7 @@ async function getPreviews(connection, categoryName, order) {
                            order by imgId limit 1), '') as thumbnailUrl
             from Post p
             where p.isDeleted='N' and categoryId = (select categoryId from Category where categoryName = ?)
+              and postId not in (select postId from ReportedPost where userId=?)
             order by (select count(*)
                       from PostHits h
                       where h.postId = p.postId) desc,
@@ -60,7 +63,7 @@ async function getPreviews(connection, categoryName, order) {
 
     const [Rows] = await connection.query(
         getPreviewsQuery,
-        [categoryName]
+        [categoryName, userId]
     );
     return Rows;
 }

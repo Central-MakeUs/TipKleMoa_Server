@@ -15,14 +15,15 @@ const regUrlType = /(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!
 
 /**
  * API No.6
- * API Name : 배너 목록 조
+ * API Name : 배너 목록 조회
  * [GET] /banners
  */
 exports.getBanners = async function (req, res) {
     try {
         try {
+            const userId = req.verifiedToken.userId;
             const connection = await pool.getConnection(async (conn) => conn);
-            const bannerRows = await postDao.getBanners(connection);
+            const bannerRows = await postDao.getBanners(connection, userId);
             connection.release();
             return res.json({
                 isSuccess: true,
@@ -41,9 +42,15 @@ exports.getBanners = async function (req, res) {
     }
 };
 
+/**
+ * API No.7
+ * API Name : 미리보기 조회
+ * [GET] /categories/:categoryName/tips?order=
+ */
 exports.getPreviews = async function (req, res) {
     try {
         try {
+            const userId = req.verifiedToken.userId;
             const categoryName = req.params.categoryName;
             const {order} = req.query;
 
@@ -65,7 +72,7 @@ exports.getPreviews = async function (req, res) {
                 })
             }
 
-            const previewRows = await postDao.getPreviews(connection, categoryName, order);
+            const previewRows = await postDao.getPreviews(connection, categoryName, order, userId);
             connection.release();
             if (previewRows == null) {
                 return res.json({
