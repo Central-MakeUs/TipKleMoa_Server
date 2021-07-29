@@ -24,6 +24,7 @@ module.exports = function () {
     require('../src/app/routes/categoryRoute')(app);
     require('../src/app/routes/searchRoute')(app);
     require('../src/app/routes/bookmarkRoute')(app);
+    require('../src/app/routes/keywordRoute')(app);
 
     /* Web */
     // require('../src/web/routes/indexRoute')(app);
