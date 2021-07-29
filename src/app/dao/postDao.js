@@ -530,10 +530,10 @@ async function getComments(connection, userId, postId) {
             END
             ) AS isAuthor
         FROM Comment
-        WHERE postId = ? and isDeleted='N'
+        WHERE postId = ? and isDeleted='N' and commentId not in (select commentId from ReportedComment where userId=?)
         ORDER BY Comment.createdAt DESC
     `
-    const params = [userId, postId];
+    const params = [userId, postId, userId];
     const [rows] = await connection.query(
         query,
         params
