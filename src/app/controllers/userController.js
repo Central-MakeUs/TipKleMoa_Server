@@ -20,8 +20,7 @@ const schedule = require('node-schedule');
  */
 exports.kakaoLogin = async function (req, res) {
     const {
-        accessToken
-        // , fcmToken
+        accessToken, fcmToken
     } = req.body;
 
     if (!accessToken) return res.json({isSuccess: false, code: 2001, message: "Access Token을 입력해주세요."});
@@ -61,7 +60,8 @@ exports.kakaoLogin = async function (req, res) {
             } else {
                 const userId = userByKakaoRows.userId;
 
-                // fcm 토큰 및 로그인 여부 갱신 코드 필요
+                // fcm 토큰 및 로그인 여부 갱신
+                await userDao.updateUserInfoByfcm(connection, userId, fcmToken);
         
                 // 토큰 생성
                 const token = await jwt.sign({
@@ -104,9 +104,7 @@ exports.kakaoLogin = async function (req, res) {
  */
 exports.kakaoSignUp = async function (req, res) {
     const {
-        accessToken
-        // , fcmToken
-        , nickName, category
+        accessToken, fcmToken, nickName, category
     } = req.body;
 
     if (!accessToken) return res.json({isSuccess: false, code: 2001, message: "Access Token을 입력해주세요."});
@@ -138,8 +136,8 @@ exports.kakaoSignUp = async function (req, res) {
             }
 
             await connection.beginTransaction();
-            // 회원 가입 (fcm 토큰 및 로그인 여부 갱신 코드 필요)
-            const insertUserInfoByKakaoRow = await userDao.insertUserInfoByKakao(connection, kakaoId, nickName);
+            // 회원 가입
+            const insertUserInfoByKakaoRow = await userDao.insertUserInfoByKakao(connection, kakaoId, nickName, fcmToken);
             userId = insertUserInfoByKakaoRow.insertId;
             let insertUserCategory;
             for(let i=0; i<category.length; i++) {

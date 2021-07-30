@@ -6,3 +6,4 @@ log/*
 
 config/database.js
 config/secret.js
+config/fcm-admin.json
