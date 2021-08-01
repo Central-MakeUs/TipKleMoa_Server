@@ -71,11 +71,29 @@ async function deleteKeyword(connection, keywordId) {
   return rows[0];
 }
 
+// 푸시 알림을 위한 키워드 목록 조회
+async function getKeywordsForFcm(connection, userId) {
+  const query = `
+    SELECT keyword, nickName, deviceToken 
+    FROM SubscribeKeyword
+    JOIN UserInfo
+    ON SubscribeKeyword.userId = UserInfo.userId and UserInfo.loginStatus = "Y" and UserInfo.isDeleted = "N" and deviceToken IS NOT NULL
+    WHERE SubscribeKeyword.userId != ?
+  `;
+  const params = [userId];
+  const [rows] = await connection.query(
+    query,
+    params
+  );
+  return rows;
+}
+
 
 module.exports = {
   checkUserKeywordExists,
   insertKeyword,
   getKeywords,
   checkKeywordExists,
-  deleteKeyword
+  deleteKeyword,
+  getKeywordsForFcm
 };
