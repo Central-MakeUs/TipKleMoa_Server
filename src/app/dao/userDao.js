@@ -15,13 +15,28 @@ async function getUserByKakao(connection, kakaoId) {
   return rows;
 }
 
-// 카카오 회원가입
-async function insertUserInfoByKakao(connection, kakaoId, nickName) {
+// fcm 토큰 및 로그인 여부 갱신
+async function updateUserInfoByfcm(connection, userId, fcmToken) {
   const query = `
-      INSERT INTO UserInfo(kakaoId, nickName)
-      VALUES (?, ?);
+    UPDATE UserInfo
+    SET deviceToken = ?, loginStatus = 'Y'
+    WHERE userId = ?
   `;
-  const params = [kakaoId, nickName];
+  const params = [fcmToken, userId];
+  const rows = await connection.query(
+    query,
+    params
+  );
+  return rows[0];
+}
+
+// 카카오 회원가입
+async function insertUserInfoByKakao(connection, kakaoId, nickName, fcmToken) {
+  const query = `
+      INSERT INTO UserInfo(kakaoId, nickName, deviceToken)
+      VALUES (?, ?, ?);
+  `;
+  const params = [kakaoId, nickName, fcmToken];
   const rows = await connection.query(
     query,
     params
@@ -164,6 +179,7 @@ async function deleteBlacklist(connection) {
 
 module.exports = {
   getUserByKakao,
+  updateUserInfoByfcm,
   insertUserInfoByKakao,
   insertUserCategory,
   getProfile,
