@@ -330,7 +330,7 @@ exports.getPostDetail = async function (req, res) {
 
             const keywordForFcmRows = await keywordDao.getKeywordsForFcm(connection, userId);
             for(let i=0; i<keywordForFcmRows.length; i++) {
-                if(whenText.includes(keywordForFcmRows[i].keyword)) {
+                if(whenText.includes(keywordForFcmRows[i].keyword) || howText.includes(keywordForFcmRows[i].keyword)) {
                     notification.notification(`[${keywordForFcmRows[i].keyword} 키워드 알림]`, keywordForFcmRows[i].nickName + "님이 등록한 키워드의 게시물이 새로 올라왔어요🙂", keywordForFcmRows[i].deviceToken, postId.toString());
                 }
             }
