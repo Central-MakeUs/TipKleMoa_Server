@@ -65,7 +65,8 @@ async function getPreviews(connection, categoryName, order) {
     return Rows;
 }
 
-async function getPosts(connection, categoryName, order, page, limit) {
+// 게시물 목록 조회
+async function getPosts(connection, categoryName, userId, order, page, limit) {
     let getPostsQuery;
     if (order == 'recent') {
         getPostsQuery = `
@@ -102,7 +103,7 @@ async function getPosts(connection, categoryName, order, page, limit) {
                        )                                                               as createdAt
             from Post
             where categoryId = (select categoryId from Category where categoryName=?)
-              and Post.isDeleted = 'N'
+              and Post.isDeleted = 'N' and postId not in (select postId from ReportedPost where userId=?)
             order by Post.createdAt desc, Post.postId desc limit ?, ?;
         `
     } else if (order == 'popular') {
@@ -140,7 +141,7 @@ async function getPosts(connection, categoryName, order, page, limit) {
                        )                                                               as createdAt
             from Post
             where categoryId = (select categoryId from Category where categoryName=?)
-              and Post.isDeleted = 'N'
+              and Post.isDeleted = 'N' and postId not in (select postId from ReportedPost where userId=?)
             order by (select count(*)
                       from PostHits h
                       where h.postId = Post.postId) desc,
@@ -153,12 +154,13 @@ async function getPosts(connection, categoryName, order, page, limit) {
 
     const [Rows] = await connection.query(
         getPostsQuery,
-        [categoryName, page, limit]
+        [categoryName, userId, page, limit]
     );
     return Rows;
 }
 
-async function searchPosts(connection, search, order, page, limit) {
+// 게시물 검색
+async function searchPosts(connection, search, userId, order, page, limit) {
     let searchQuery;
     if (order == 'recent') {
         searchQuery = `
@@ -194,7 +196,7 @@ async function searchPosts(connection, search, order, page, limit) {
                        end
                        )                                                               as createdAt
             from Post
-            where Post.isDeleted = 'N'
+            where Post.isDeleted = 'N' and postId not in (select postId from ReportedPost where userId=?)
               and (PostId in (select postId
                               from PostImage
                               where (imgText like concat('%', ?, '%')))
@@ -235,7 +237,7 @@ async function searchPosts(connection, search, order, page, limit) {
                        end
                        )                                                               as createdAt
             from Post
-            where Post.isDeleted = 'N'
+            where Post.isDeleted = 'N' and postId not in (select postId from ReportedPost where userId=?)
               and (PostId in (select postId
                               from PostImage
                               where (imgText like concat('%', ?, '%')))
@@ -253,7 +255,7 @@ async function searchPosts(connection, search, order, page, limit) {
 
     const [Rows] = await connection.query(
         searchQuery,
-        [search, search, search, page, limit]
+        [userId, search, search, search, page, limit]
     );
     return Rows;
 }
@@ -540,6 +542,19 @@ async function getComments(connection, userId, postId) {
     return rows;
 }
 
+async function getCommentDetail(connection, commentId) {
+    const query = `
+        select *
+        from Comment
+        where commentId=?
+    `
+    const [rows] = await connection.query(
+        query,
+        [commentId]
+    );
+    return rows;
+}
+
 // 댓글 삭제 권한 확인
 async function checkCommentExists(connection, userId, commentId) {
     const query = `
@@ -602,6 +617,7 @@ module.exports = {
     updateStar,
     insertComment,
     getComments,
+    getCommentDetail,
     checkCommentExists,
     deleteComment,
     checkCommentValid,

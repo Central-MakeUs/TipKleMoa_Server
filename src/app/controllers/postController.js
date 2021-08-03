@@ -1,6 +1,7 @@
 const {pool} = require('../../../config/database');
 const {logger} = require('../../../config/winston');
 
+const userDao = require('../dao/userDao');
 const postDao = require('../dao/postDao');
 const categoryDao = require('../dao/categoryDao');
 const searchDao = require('../dao/searchDao');
@@ -11,6 +12,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const secret_config = require('../../../config/secret');
 const notification = require('../utils/notification');
+const slack = require('../utils/slack_report');
 
 const regUrlType = /(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
 
@@ -94,6 +96,11 @@ exports.getPreviews = async function (req, res) {
     }
 };
 
+/**
+ * API No.9
+ * API Name : 게시물 목록 조회
+ * [GET] /posts?categoryName=&order=&search=&page=&limit=
+ */
 exports.getPosts = async function (req, res) {
     try {
         try {
@@ -140,7 +147,7 @@ exports.getPosts = async function (req, res) {
 
             const connection = await pool.getConnection(async (conn) => conn);
             if (search) {
-                const searchRows = await postDao.searchPosts(connection, search, order, Number(limit)*(Number(page)-1), Number(limit));
+                const searchRows = await postDao.searchPosts(connection, search, userId, order, Number(limit)*(Number(page)-1), Number(limit));
                 for(let i=0; i<searchRows.length; i++){
                     const imgRows = await postDao.getPostImages(connection, searchRows[i].postId)
                     const imgList = [];
@@ -177,7 +184,7 @@ exports.getPosts = async function (req, res) {
                     });
                 }
 
-                const postRows = await postDao.getPosts(connection, categoryName, order, Number(limit)*(Number(page)-1), Number(limit));
+                const postRows = await postDao.getPosts(connection, categoryName, userId, order, Number(limit)*(Number(page)-1), Number(limit));
                 for(let i=0; i<postRows.length; i++){
                     const imgRows = await postDao.getPostImages(connection, postRows[i].postId)
                     const imgList = [];
@@ -388,6 +395,7 @@ exports.getPostDetail = async function (req, res) {
             const insertPointRow = await pointDao.insertPoint(connection, userId, 5, "reportPost");
             await connection.commit();
             connection.release();
+            await slack.send_report("post", userId, postId, reason);
             return res.json({
                 isSuccess: true,
                 code: 1000,
@@ -439,6 +447,7 @@ exports.reportComment = async function (req, res) {
             const insertPointRow = await pointDao.insertPoint(connection, userId, 5, "reportComment");
             await connection.commit();
             connection.release();
+            await slack.send_report("comment", userId, commentId, reason);
             return res.json({
                 isSuccess: true,
                 code: 1000,
@@ -700,8 +709,11 @@ exports.deleteComment = async function (req, res) {
                     message: "존재하지 않거나, 삭제 권한이 없는 댓글입니다.",
                 });
             }
-
+            await connection.beginTransaction();
             await postDao.deleteComment(connection,commentId);
+            await pointDao.insertPoint(connection, userId, -6 , "deleteComment");
+
+            await connection.commit();
             connection.release();
             return res.json({
                 isSuccess: true,
@@ -709,6 +721,7 @@ exports.deleteComment = async function (req, res) {
                 message: "댓글 삭제 성공",
             });
         } catch (err) {
+            await connection.rollback();
             connection.release();
             logger.error(`App - deleteComment DB Connection error\n: ${JSON.stringify(err)}`);
             return res.json({isSuccess: false, code: 3002, message: "데이터베이스 연결에 실패하였습니다."});
