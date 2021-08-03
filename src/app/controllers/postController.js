@@ -7,9 +7,12 @@ const categoryDao = require('../dao/categoryDao');
 const searchDao = require('../dao/searchDao');
 const pointDao = require('../dao/pointDao');
 const bookmarkDao = require('../dao/bookmarkDao');
+const keywordDao = require('../dao/keywordDao');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const secret_config = require('../../../config/secret');
+const notification = require('../utils/notification');
+
 const slack_client = require('../../../config/slack-bot');
 const regUrlType = /(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
 
@@ -331,6 +334,14 @@ exports.getPostDetail = async function (req, res) {
             const insertPointRow = await pointDao.insertPoint(connection, userId, 15, "updatePost");
 
             await connection.commit();
+
+            const keywordForFcmRows = await keywordDao.getKeywordsForFcm(connection, userId);
+            for(let i=0; i<keywordForFcmRows.length; i++) {
+                if(whenText.includes(keywordForFcmRows[i].keyword) || howText.includes(keywordForFcmRows[i].keyword)) {
+                    notification.notification(`[${keywordForFcmRows[i].keyword} 키워드 알림]`, keywordForFcmRows[i].nickName + "님이 등록한 키워드의 게시물이 새로 올라왔어요🙂", keywordForFcmRows[i].deviceToken, postId.toString());
+                }
+            }
+
             connection.release();
             return res.json({
                 isSuccess: true,
