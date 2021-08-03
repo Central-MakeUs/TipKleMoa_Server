@@ -304,13 +304,14 @@ async function getPostDetail(connection, postId, userId) {
                                  where userId = ?
                                    and postId = Post.postId), 'Y',
                           'N'))                                                    as isBookMarked,
-               (select COUNT(*) from Comment where Comment.postId = Post.postId and Comment.isDeleted='N')   as commentCount
+               (select COUNT(*) from Comment where Comment.postId = Post.postId and Comment.isDeleted='N'
+                                               and commentId not in (select commentId from ReportedComment RC where RC.userId = ?)) as commentCount
         from Post inner join UserInfo UI on Post.userId = UI.userId
         where postId = ?;
     `;
     const [Rows] = await connection.query(
         getPostDeatilQuery,
-        [userId, userId, postId]
+        [userId, userId, userId, postId]
     );
     return Rows;
 }
