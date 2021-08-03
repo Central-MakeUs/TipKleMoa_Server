@@ -277,15 +277,15 @@ async function getPostImages(connection, postId) {
     return Rows;
 }
 
+// 게시물 상세 조회
 async function getPostDetail(connection, postId, userId) {
     const getPostDeatilQuery = `
         select postId,
-               userId,
-               (select nickName from UserInfo where UserInfo.userId = Post.userId) as nickName,
-               (select levelImgUrl
-                from UserInfo
-                         inner join Level on UserInfo.level = Level.level
-                where UserInfo.userId = Post.userId)                               as profileImgUrl,
+               Post.userId,
+               nickName,
+               ifnull(profileImg, (select levelImgUrl
+                                   from Level
+                                   where UI.level = Level.level) ) as profileImgUrl,
                whenText,
                howText,
                ifnull(description, '')                                             as description,
@@ -302,7 +302,7 @@ async function getPostDetail(connection, postId, userId) {
                                    and postId = Post.postId), 'Y',
                           'N'))                                                    as isBookMarked,
                (select COUNT(*) from Comment where Comment.postId = Post.postId and Comment.isDeleted='N')   as commentCount
-        from Post
+        from Post inner join UserInfo UI on Post.userId = UI.userId
         where postId = ?;
     `;
     const [Rows] = await connection.query(
@@ -506,34 +506,33 @@ async function insertComment(connection, userId, postId, content) {
 async function getComments(connection, userId, postId) {
     const query = `
         SELECT commentId,
-            userId,
-            (SELECT nickName FROM UserInfo WHERE UserInfo.userId = Comment.userId) AS nickName,
-            (SELECT levelImgUrl
-                FROM UserInfo
-                JOIN Level on UserInfo.level = Level.level
-                WHERE UserInfo.userId = Comment.userId) AS profileImgUrl,
+               Comment.userId,
+               nickName,
+               ifnull(profileImg, (select levelImgUrl
+                                   from Level
+                                   where UI.level = Level.level) ) as profileImgUrl,
             content,
             (CASE
-                WHEN timestampdiff(hour, createdAt, now()) <= 1 THEN '방금'
-                WHEN timestampdiff(hour, createdAt, now()) <= 12
-                    THEN concat(timestampdiff(hour, createdAt, now()) <= 12, '시간 전')
-                WHEN timestampdiff(hour, createdAt, now()) <= 24 THEN '오늘'
-                WHEN timestampdiff(day, createdAt, now()) = 1 THEN '어제'
-                WHEN timestampdiff(day, createdAt, now()) <= 30
-                    THEN concat(timestampdiff(day, createdAt, now()), '일 전')
-                WHEN timestampdiff(month, createdAt, now()) < 12
-                    THEN concat(timestampdiff(month, createdAt, now()), '달 전')
-                WHEN timestampdiff(month, createdAt, now()) > 12
-                    THEN concat(timestampdiff(year, createdAt, now()), '년 전')
+                WHEN timestampdiff(hour, Comment.createdAt, now()) <= 1 THEN '방금'
+                WHEN timestampdiff(hour, Comment.createdAt, now()) <= 12
+                    THEN concat(timestampdiff(hour, Comment.createdAt, now()) <= 12, '시간 전')
+                WHEN timestampdiff(hour, Comment.createdAt, now()) <= 24 THEN '오늘'
+                WHEN timestampdiff(day, Comment.createdAt, now()) = 1 THEN '어제'
+                WHEN timestampdiff(day, Comment.createdAt, now()) <= 30
+                    THEN concat(timestampdiff(day, Comment.createdAt, now()), '일 전')
+                WHEN timestampdiff(month, Comment.createdAt, now()) < 12
+                    THEN concat(timestampdiff(month, Comment.createdAt, now()), '달 전')
+                WHEN timestampdiff(month, Comment.createdAt, now()) > 12
+                    THEN concat(timestampdiff(year, Comment.createdAt, now()), '년 전')
                END
                ) AS createdAt,
-            (CASE
-                WHEN userId = ? THEN 'Y'
+           (CASE
+                WHEN Comment.userId = ? THEN 'Y'
                 ELSE 'N'
-            END
-            ) AS isAuthor
-        FROM Comment
-        WHERE postId = ? and isDeleted='N' and commentId not in (select commentId from ReportedComment where userId=?)
+           END
+           ) AS isAuthor
+        FROM Comment inner join UserInfo UI on Comment.userId = UI.userId
+        WHERE postId = ? and Comment.isDeleted='N' and commentId not in (select commentId from ReportedComment where userId=?)
         ORDER BY Comment.createdAt
     `
     const params = [userId, postId, userId];
