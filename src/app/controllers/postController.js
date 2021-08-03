@@ -12,8 +12,8 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const secret_config = require('../../../config/secret');
 const notification = require('../utils/notification');
+const slack = require('../utils/slack_report');
 
-const slack_client = require('../../../config/slack-bot');
 const regUrlType = /(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
 
 
@@ -395,7 +395,7 @@ exports.getPostDetail = async function (req, res) {
             const insertPointRow = await pointDao.insertPoint(connection, userId, 5, "reportPost");
             await connection.commit();
             connection.release();
-            await send_report("post", userId, postId, reason);
+            await slack.send_report("post", userId, postId, reason);
             return res.json({
                 isSuccess: true,
                 code: 1000,
@@ -447,7 +447,7 @@ exports.reportComment = async function (req, res) {
             const insertPointRow = await pointDao.insertPoint(connection, userId, 5, "reportComment");
             await connection.commit();
             connection.release();
-            await send_report("comment", userId, commentId, reason);
+            await slack.send_report("comment", userId, commentId, reason);
             return res.json({
                 isSuccess: true,
                 code: 1000,
@@ -731,40 +731,3 @@ exports.deleteComment = async function (req, res) {
         return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
     }
 };
-
-// 슬랙 채널로 신고 정보 전송
-const send_report = async function (kind, userId, postId, reason) {
-    try {
-        const connection = await pool.getConnection(async (conn) => conn);
-        const userRows = await userDao.getProfile(connection, userId);
-        let text;
-
-        if (kind==="post"){
-            const postRows = await postDao.getPostDetail(connection, postId, userId);
-            const imgRows = await postDao.getPostImages(connection, postId)
-            text = "🚨 게시물 신고 🚨\n\n" + userRows[0].nickName + "님이 게시글을 신고했습니다.\n\n신고 사유 : " + reason +
-                "\n=========== 게시글 정보 ===========\n" + "postId : " + postId + "\n" + "content : " +
-                postRows[0].whenText + "\n" + "img : " + imgRows[0].imgUrl
-        }
-        else{
-            const commentRows = await postDao.getCommentDetail(connection, postId);
-            text = "🚨 댓글 신고 🚨\n\n" + userRows[0].nickName + "님이 댓글을 신고했습니다.\n\n신고 사유 : " + reason +
-                "\n=========== 댓글 정보 ===========\n" + "commentId : " + postId + "\n" + "content : " + commentRows[0].content
-        }
-
-        try {
-            await slack_client.chat.postMessage({
-                "channel" : "report",
-                "text" : text
-            });
-        } catch (error) {
-            connection.release();
-            console.log(error);
-        }
-        connection.release();
-    } catch (err) {
-        logger.error(`App - insertReport error\n: ${JSON.stringify(err)}`);
-        return res.json({isSuccess: false, code: 3001, message: "서버와의 통신에 실패하였습니다."});
-    }
-
-}
