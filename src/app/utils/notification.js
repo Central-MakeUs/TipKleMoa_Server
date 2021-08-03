@@ -1,11 +1,14 @@
 const admin = require('firebase-admin');
 
-exports.notification = async function (title, body, token) {
+exports.notification = async function (title, body, token, postId) {
 
     let message = {
         notification: {
             title: title,
             body: body,
+        },
+        data: {
+            postId: postId,
         },
         token: token,
     }
