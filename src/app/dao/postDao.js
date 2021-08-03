@@ -74,84 +74,88 @@ async function getPosts(connection, categoryName, userId, order, page, limit) {
     if (order == 'recent') {
         getPostsQuery = `
             select postId,
-                   userId,
-                   (select nickName from UserInfo where UserInfo.userId = Post.userId) as nickName,
-                   (select levelImgUrl
-                    from UserInfo
-                             inner join Level on UserInfo.level = Level.level
-                    where UserInfo.userId = Post.userId)                               as profileImgUrl,
+                   Post.userId,
+                   nickName,
+                   ifnull(profileImg, (select levelImgUrl
+                                       from Level
+                                       where UI.level = Level.level))          as profileImgUrl,
                    whenText,
                    howText,
                    (case
                         when isnull(description) then ''
                         when CHAR_LENGTH(description) <= 70 then description
-                        else concat(substr(description, 1, 70), '...더보기') end)         as description,
+                        else concat(substr(description, 1, 70), '...더보기') end) as description,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
-                            1)                                                         as score,
+                            1)                                                 as score,
                    cast((truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
-                                  0)) as unsigned)                                     as star,
+                                  0)) as unsigned)                             as star,
                    (case
-                        when timestampdiff(hour, createdAt, now()) <= 1 then '방금'
-                        when timestampdiff(hour, createdAt, now()) <= 12
-                            then concat(timestampdiff(hour, createdAt, now()) <= 12, '시간 전')
-                        when timestampdiff(hour, createdAt, now()) <= 24 then '오늘'
-                        when timestampdiff(day, createdAt, now()) = 1 then '어제'
-                        when timestampdiff(day, createdAt, now()) <= 30
-                            then concat(timestampdiff(day, createdAt, now()), '일 전')
-                        when timestampdiff(month, createdAt, now()) < 12
-                            then concat(timestampdiff(month, createdAt, now()), '달 전')
-                        when timestampdiff(month, createdAt, now()) > 12
-                            then concat(timestampdiff(year, createdAt, now()), '년 전')
+                        when timestampdiff(hour, Post.createdAt, now()) <= 1 then '방금'
+                        when timestampdiff(hour, Post.createdAt, now()) <= 12
+                            then concat(timestampdiff(hour, Post.createdAt, now()) <= 12, '시간 전')
+                        when timestampdiff(hour, Post.createdAt, now()) <= 24 then '오늘'
+                        when timestampdiff(day, Post.createdAt, now()) = 1 then '어제'
+                        when timestampdiff(day, Post.createdAt, now()) <= 30
+                            then concat(timestampdiff(day, Post.createdAt, now()), '일 전')
+                        when timestampdiff(month, Post.createdAt, now()) < 12
+                            then concat(timestampdiff(month, Post.createdAt, now()), '달 전')
+                        when timestampdiff(month, Post.createdAt, now()) > 12
+                            then concat(timestampdiff(year, Post.createdAt, now()), '년 전')
                        end
-                       )                                                               as createdAt
+                       )                                                       as createdAt
             from Post
-            where categoryId = (select categoryId from Category where categoryName=?)
-              and Post.isDeleted = 'N' and postId not in (select postId from ReportedPost where userId=?)
-            order by Post.createdAt desc, Post.postId desc limit ?, ?;
+                     inner join UserInfo UI on Post.userId = UI.userId
+            where categoryId = (select categoryId from Category where categoryName = ?)
+              and Post.isDeleted = 'N'
+              and postId not in (select postId from ReportedPost RP where RP.userId = ?)
+            order by Post.createdAt desc, Post.postId desc
+                limit ?, ?;
         `
     } else if (order == 'popular') {
         getPostsQuery = `
             select postId,
-                   userId,
-                   (select nickName from UserInfo where UserInfo.userId = Post.userId) as nickName,
-                   (select levelImgUrl
-                    from UserInfo
-                             inner join Level on UserInfo.level = Level.level
-                    where UserInfo.userId = Post.userId)                               as profileImgUrl,
+                   Post.userId,
+                   nickName,
+                   ifnull(profileImg, (select levelImgUrl
+                                       from Level
+                                       where UI.level = Level.level))          as profileImgUrl,
                    whenText,
                    howText,
                    (case
                         when isnull(description) then ''
                         when CHAR_LENGTH(description) <= 70 then description
-                        else concat(substr(description, 1, 70), '...더보기') end)         as description,
+                        else concat(substr(description, 1, 70), '...더보기') end) as description,
                    truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
-                            1)                                                         as score,
+                            1)                                                 as score,
                    cast((truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
-                                  0)) as unsigned)                                     as star,
+                                  0)) as unsigned)                             as star,
                    (case
-                        when timestampdiff(hour, createdAt, now()) <= 1 then '방금'
-                        when timestampdiff(hour, createdAt, now()) <= 12
-                            then concat(timestampdiff(hour, createdAt, now()) <= 12, '시간 전')
-                        when timestampdiff(hour, createdAt, now()) <= 24 then '오늘'
-                        when timestampdiff(day, createdAt, now()) = 1 then '어제'
-                        when timestampdiff(day, createdAt, now()) <= 30
-                            then concat(timestampdiff(day, createdAt, now()), '일 전')
-                        when timestampdiff(month, createdAt, now()) < 12
-                            then concat(timestampdiff(month, createdAt, now()), '달 전')
-                        when timestampdiff(month, createdAt, now()) > 12
-                            then concat(timestampdiff(year, createdAt, now()), '년 전')
+                        when timestampdiff(hour, Post.createdAt, now()) <= 1 then '방금'
+                        when timestampdiff(hour, Post.createdAt, now()) <= 12
+                            then concat(timestampdiff(hour, Post.createdAt, now()) <= 12, '시간 전')
+                        when timestampdiff(hour, Post.createdAt, now()) <= 24 then '오늘'
+                        when timestampdiff(day, Post.createdAt, now()) = 1 then '어제'
+                        when timestampdiff(day, Post.createdAt, now()) <= 30
+                            then concat(timestampdiff(day, Post.createdAt, now()), '일 전')
+                        when timestampdiff(month, Post.createdAt, now()) < 12
+                            then concat(timestampdiff(month, Post.createdAt, now()), '달 전')
+                        when timestampdiff(month, Post.createdAt, now()) > 12
+                            then concat(timestampdiff(year, Post.createdAt, now()), '년 전')
                        end
-                       )                                                               as createdAt
+                       )                                                       as createdAt
             from Post
-            where categoryId = (select categoryId from Category where categoryName=?)
-              and Post.isDeleted = 'N' and postId not in (select postId from ReportedPost where userId=?)
+                     inner join UserInfo UI on Post.userId = UI.userId
+            where categoryId = (select categoryId from Category where categoryName = ?)
+              and Post.isDeleted = 'N'
+              and postId not in (select postId from ReportedPost RP where RP.userId = ?)
             order by (select count(*)
                       from PostHits h
                       where h.postId = Post.postId) desc,
                      (select avg(score) from PostStar s where s.postId = Post.postId) desc,
                      (select count(*) from PostStar s where s.postId = Post.postId) desc,
                      (select count(*) from Comment c where c.postId = Post.postId) desc,
-                     Post.createdAt desc, Post.postId desc limit ?, ?;
+                     Post.createdAt desc, Post.postId desc
+                limit ?, ?;
         `
     }
 
@@ -168,12 +172,11 @@ async function searchPosts(connection, search, userId, order, page, limit) {
     if (order == 'recent') {
         searchQuery = `
             select postId,
-                   userId,
-                   (select nickName from UserInfo where UserInfo.userId = Post.userId) as nickName,
-                   (select levelImgUrl
-                    from UserInfo
-                             inner join Level on UserInfo.level = Level.level
-                    where UserInfo.userId = Post.userId)                               as profileImgUrl,
+                   Post.userId,
+                   nickName,
+                   ifnull(profileImg, (select levelImgUrl
+                                       from Level
+                                       where UI.level = Level.level))          as profileImgUrl,
                    whenText,
                    howText,
                    (case
@@ -185,36 +188,36 @@ async function searchPosts(connection, search, userId, order, page, limit) {
                    cast((truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
                                   0)) as unsigned)                                     as star,
                    (case
-                        when timestampdiff(hour, createdAt, now()) <= 1 then '방금'
-                        when timestampdiff(hour, createdAt, now()) <= 12
-                            then concat(timestampdiff(hour, createdAt, now()) <= 12, '시간 전')
-                        when timestampdiff(hour, createdAt, now()) <= 24 then '오늘'
-                        when timestampdiff(day, createdAt, now()) = 1 then '어제'
-                        when timestampdiff(day, createdAt, now()) <= 30
-                            then concat(timestampdiff(day, createdAt, now()), '일 전')
-                        when timestampdiff(month, createdAt, now()) < 12
-                            then concat(timestampdiff(month, createdAt, now()), '달 전')
-                        when timestampdiff(month, createdAt, now()) > 12
-                            then concat(timestampdiff(year, createdAt, now()), '년 전')
+                        when timestampdiff(hour, Post.createdAt, now()) <= 1 then '방금'
+                        when timestampdiff(hour, Post.createdAt, now()) <= 12
+                            then concat(timestampdiff(hour, Post.createdAt, now()) <= 12, '시간 전')
+                        when timestampdiff(hour, Post.createdAt, now()) <= 24 then '오늘'
+                        when timestampdiff(day, Post.createdAt, now()) = 1 then '어제'
+                        when timestampdiff(day, Post.createdAt, now()) <= 30
+                            then concat(timestampdiff(day, Post.createdAt, now()), '일 전')
+                        when timestampdiff(month, Post.createdAt, now()) < 12
+                            then concat(timestampdiff(month, Post.createdAt, now()), '달 전')
+                        when timestampdiff(month, Post.createdAt, now()) > 12
+                            then concat(timestampdiff(year, Post.createdAt, now()), '년 전')
                        end
                        )                                                               as createdAt
-            from Post
+            from Post inner join UserInfo UI on Post.userId = UI.userId
             where Post.isDeleted = 'N' and postId not in (select postId from ReportedPost where userId=?)
               and (PostId in (select postId
                               from PostImage
                               where (imgText like concat('%', ?, '%')))
                 or (whenText like concat('%', ?, '%'))
                 or (howText like concat('%', ?, '%')))
-            order by Post.createdAt desc, postId desc limit ?, ?;`
+            order by Post.createdAt desc, postId desc limit ?, ?;
+            `
     } else if (order == 'popular') {
         searchQuery = `
             select postId,
-                   userId,
-                   (select nickName from UserInfo where UserInfo.userId = Post.userId) as nickName,
-                   (select levelImgUrl
-                    from UserInfo
-                             inner join Level on UserInfo.level = Level.level
-                    where UserInfo.userId = Post.userId)                               as profileImgUrl,
+                   Post.userId,
+                   nickName,
+                   ifnull(profileImg, (select levelImgUrl
+                                       from Level
+                                       where UI.level = Level.level))          as profileImgUrl,
                    whenText,
                    howText,
                    (case
@@ -226,21 +229,21 @@ async function searchPosts(connection, search, userId, order, page, limit) {
                    cast((truncate(ifnull((select avg(score) from PostStar where PostStar.postId = Post.postId), 0),
                                   0)) as unsigned)                                     as star,
                    (case
-                        when timestampdiff(hour, createdAt, now()) <= 1 then '방금'
-                        when timestampdiff(hour, createdAt, now()) <= 12
-                            then concat(timestampdiff(hour, createdAt, now()) <= 12, '시간 전')
-                        when timestampdiff(hour, createdAt, now()) <= 24 then '오늘'
-                        when timestampdiff(day, createdAt, now()) = 1 then '어제'
-                        when timestampdiff(day, createdAt, now()) <= 30
-                            then concat(timestampdiff(day, createdAt, now()), '일 전')
-                        when timestampdiff(month, createdAt, now()) < 12
-                            then concat(timestampdiff(month, createdAt, now()), '달 전')
-                        when timestampdiff(month, createdAt, now()) > 12
-                            then concat(timestampdiff(year, createdAt, now()), '년 전')
+                        when timestampdiff(hour, Post.createdAt, now()) <= 1 then '방금'
+                        when timestampdiff(hour, Post.createdAt, now()) <= 12
+                            then concat(timestampdiff(hour, Post.createdAt, now()) <= 12, '시간 전')
+                        when timestampdiff(hour, Post.createdAt, now()) <= 24 then '오늘'
+                        when timestampdiff(day, Post.createdAt, now()) = 1 then '어제'
+                        when timestampdiff(day, Post.createdAt, now()) <= 30
+                            then concat(timestampdiff(day, Post.createdAt, now()), '일 전')
+                        when timestampdiff(month, Post.createdAt, now()) < 12
+                            then concat(timestampdiff(month, Post.createdAt, now()), '달 전')
+                        when timestampdiff(month, Post.createdAt, now()) > 12
+                            then concat(timestampdiff(year, Post.createdAt, now()), '년 전')
                        end
                        )                                                               as createdAt
-            from Post
-            where Post.isDeleted = 'N' and postId not in (select postId from ReportedPost where userId=?)
+            from Post inner join UserInfo UI on Post.userId = UI.userId
+            where Post.isDeleted = 'N' and postId not in (select postId from ReportedPost RP where RP.userId=?)
               and (PostId in (select postId
                               from PostImage
                               where (imgText like concat('%', ?, '%')))
