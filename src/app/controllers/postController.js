@@ -143,7 +143,7 @@ exports.getPosts = async function (req, res) {
                 })
             }
 
-            const checkNumValid = /^([1-9])+$/;
+            const checkNumValid = /^([1-9])+([0-9])*$/;
             if(!checkNumValid.test(page) || !checkNumValid.test(limit)){
                 return res.json({
                     isSuccess: false,
