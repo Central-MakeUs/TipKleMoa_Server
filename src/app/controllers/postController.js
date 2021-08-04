@@ -1,6 +1,7 @@
 const {pool} = require('../../../config/database');
 const {logger} = require('../../../config/winston');
 
+const userDao = require('../dao/userDao');
 const postDao = require('../dao/postDao');
 const categoryDao = require('../dao/categoryDao');
 const searchDao = require('../dao/searchDao');
@@ -11,6 +12,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const secret_config = require('../../../config/secret');
 const notification = require('../utils/notification');
+const slack = require('../utils/slack_report');
 
 const regUrlType = /(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
 
@@ -342,7 +344,7 @@ exports.getPostDetail = async function (req, res) {
 
             const keywordForFcmRows = await keywordDao.getKeywordsForFcm(connection, userId);
             for(let i=0; i<keywordForFcmRows.length; i++) {
-                if(whenText.includes(keywordForFcmRows[i].keyword)) {
+                if(whenText.includes(keywordForFcmRows[i].keyword) || howText.includes(keywordForFcmRows[i].keyword)) {
                     notification.notification(`[${keywordForFcmRows[i].keyword} 키워드 알림]`, keywordForFcmRows[i].nickName + "님이 등록한 키워드의 게시물이 새로 올라왔어요🙂", keywordForFcmRows[i].deviceToken, postId.toString());
                 }
             }
@@ -400,6 +402,7 @@ exports.getPostDetail = async function (req, res) {
             const insertPointRow = await pointDao.insertPoint(connection, userId, 5, "reportPost");
             await connection.commit();
             connection.release();
+            await slack.send_report("post", userId, postId, reason);
             return res.json({
                 isSuccess: true,
                 code: 1000,
@@ -451,6 +454,7 @@ exports.reportComment = async function (req, res) {
             const insertPointRow = await pointDao.insertPoint(connection, userId, 5, "reportComment");
             await connection.commit();
             connection.release();
+            await slack.send_report("comment", userId, commentId, reason);
             return res.json({
                 isSuccess: true,
                 code: 1000,

@@ -548,6 +548,19 @@ async function getComments(connection, userId, postId) {
     return rows;
 }
 
+async function getCommentDetail(connection, commentId) {
+    const query = `
+        select *
+        from Comment
+        where commentId=?
+    `
+    const [rows] = await connection.query(
+        query,
+        [commentId]
+    );
+    return rows;
+}
+
 // 댓글 삭제 권한 확인
 async function checkCommentExists(connection, userId, commentId) {
     const query = `
@@ -610,6 +623,7 @@ module.exports = {
     updateStar,
     insertComment,
     getComments,
+    getCommentDetail,
     checkCommentExists,
     deleteComment,
     checkCommentValid,
