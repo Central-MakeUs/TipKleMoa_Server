@@ -1,4 +1,4 @@
-const { pool } = require("../../../config/database");
+const {pool} = require("../../../config/database");
 
 // 검색어 목록 조회
 async function getSearch(connection, userId, order) {

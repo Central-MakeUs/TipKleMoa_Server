@@ -13,7 +13,11 @@ exports.getSearch = async function (req, res) {
         const userId = req.verifiedToken.userId;
         const order = req.query.order
         if (!order) return res.json({isSuccess: false, code: 2012, message: "order는 반드시 파라미터로 넘겨줘야 하는 값입니다."});
-        if (!(order == 'recent' || order == 'popular')) return res.json({isSuccess: false, code: 2013, message: "order 값이 옳지 않습니다."});
+        if (!(order == 'recent' || order == 'popular')) return res.json({
+            isSuccess: false,
+            code: 2013,
+            message: "order 값이 옳지 않습니다."
+        });
 
         try {
             const connection = await pool.getConnection(async (conn) => conn);

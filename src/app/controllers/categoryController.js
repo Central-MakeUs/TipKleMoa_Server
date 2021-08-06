@@ -79,7 +79,7 @@ exports.updateUserCategory = async function (req, res) {
             const connection = await pool.getConnection(async (conn) => conn);
             await connection.beginTransaction()
             await categoryDao.deleteUserCategory(connection, userId);
-            for(let i=0; i<category.length; i++) {
+            for (let i = 0; i < category.length; i++) {
                 await categoryDao.insertUserCategory(connection, userId, category[i]);
             }
             await connection.commit();

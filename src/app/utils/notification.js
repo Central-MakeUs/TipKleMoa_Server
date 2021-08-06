@@ -12,12 +12,12 @@ exports.notification = async function (title, body, token, postId) {
         },
         token: token,
     }
-    
+
     admin
         .messaging()
         .send(message)
         .then(function (response) {
-          console.log('Successfully sent message: ', response)
+            console.log('Successfully sent message: ', response)
         })
         .catch(function (err) {
             console.log('Error Sending message: ', err)

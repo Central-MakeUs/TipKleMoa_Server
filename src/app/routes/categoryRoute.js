@@ -1,4 +1,4 @@
-module.exports = function(app){
+module.exports = function (app) {
     const category = require('../controllers/categoryController');
     const jwtMiddleware = require('../../../config/jwtMiddleware');
 

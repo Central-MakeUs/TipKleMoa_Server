@@ -2,17 +2,12 @@ const {pool} = require('../../../config/database');
 const {logger} = require('../../../config/winston');
 
 const jwt = require('jsonwebtoken');
-const regexEmail = require('regex-email');
-const regUrlType = /(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
-const crypto = require('crypto');
 const secret_config = require('../../../config/secret');
-
 const bookmarkDao = require('../dao/bookmarkDao');
 const userDao = require('../dao/userDao');
-const { constants } = require('buffer');
-
 const axios = require('axios')
 const schedule = require('node-schedule');
+const regUrlType = /(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
 
 /**
  * API No. 1
@@ -45,7 +40,7 @@ exports.kakaoLogin = async function (req, res) {
             const kakaoId = kakaoInfo.data.id;
             const [userByKakaoRows] = await userDao.getUserByKakao(connection, kakaoId);
             connection.release();
-            if(userByKakaoRows == undefined) {
+            if (userByKakaoRows == undefined) {
                 const result = {
                     isMember: 'N',
                     userId: 0,
@@ -63,23 +58,23 @@ exports.kakaoLogin = async function (req, res) {
 
                 // fcm 토큰 및 로그인 여부 갱신
                 await userDao.updateUserInfoByfcm(connection, userId, fcmToken);
-        
+
                 // 토큰 생성
                 const token = await jwt.sign({
-                    userId: userId,
-                },
-                secret_config.jwtsecret,
-                {
-                    expiresIn: '365d',
-                    subject: 'userId',
-                });
+                        userId: userId,
+                    },
+                    secret_config.jwtsecret,
+                    {
+                        expiresIn: '365d',
+                        subject: 'userId',
+                    });
 
                 const result = {
                     isMember: 'Y',
                     userId: userId,
                     jwt: token
                 }
-        
+
                 return res.json({
                     isSuccess: true,
                     code: 1000,
@@ -131,7 +126,7 @@ exports.kakaoSignUp = async function (req, res) {
             const connection = await pool.getConnection(async (conn) => conn);
             const kakaoId = kakaoInfo.data.id;
             const [userByKakaoRows] = await userDao.getUserByKakao(connection, kakaoId);
-            if(userByKakaoRows != undefined) {
+            if (userByKakaoRows != undefined) {
                 connection.release();
                 return res.json({isSuccess: false, code: 2014, message: "이미 가입된 회원입니다."});
             }
@@ -141,7 +136,7 @@ exports.kakaoSignUp = async function (req, res) {
             const insertUserInfoByKakaoRow = await userDao.insertUserInfoByKakao(connection, kakaoId, nickName, fcmToken);
             userId = insertUserInfoByKakaoRow.insertId;
             let insertUserCategory;
-            for(let i=0; i<category.length; i++) {
+            for (let i = 0; i < category.length; i++) {
                 insertUserCategory = await userDao.insertUserCategory(connection, userId, category[i]);
             }
             // 기본 폴더 생성
@@ -149,13 +144,13 @@ exports.kakaoSignUp = async function (req, res) {
 
             // 토큰 생성
             const token = await jwt.sign({
-                userId: userId,
-            },
-            secret_config.jwtsecret,
-            {
-                expiresIn: '365d',
-                subject: 'userId',
-            });
+                    userId: userId,
+                },
+                secret_config.jwtsecret,
+                {
+                    expiresIn: '365d',
+                    subject: 'userId',
+                });
 
             const result = {
                 userId: userId,
@@ -200,7 +195,7 @@ exports.check = async function (req, res) {
  * API Name : 마이페이지 조회 API
  * [GET] /users/profiles
  */
- exports.getProfile = async function (req, res) {
+exports.getProfile = async function (req, res) {
 
     try {
         try {
@@ -209,10 +204,10 @@ exports.check = async function (req, res) {
             const [profileRows] = await userDao.getProfile(connection, userId);
             let present;
             let goal;
-            if(profileRows.level == 1) {
+            if (profileRows.level == 1) {
                 present = 0;
                 goal = 100;
-            } else if(profileRows.level == 2) {
+            } else if (profileRows.level == 2) {
                 present = 100;
                 goal = 500;
             } else {
@@ -221,15 +216,15 @@ exports.check = async function (req, res) {
             }
             let rate = Math.floor((profileRows.point - present) / (goal - present) * 100);
             let levelbar;
-            if(rate < 20) {
+            if (rate < 20) {
                 levelbar = 0;
-            } else if(rate < 40) {
+            } else if (rate < 40) {
                 levelbar = 1;
-            } else if(rate < 60) {
+            } else if (rate < 60) {
                 levelbar = 2;
-            } else if(rate < 80) {
+            } else if (rate < 80) {
                 levelbar = 3;
-            } else if(rate < 100) {
+            } else if (rate < 100) {
                 levelbar = 4;
             } else {
                 levelbar = 5;
@@ -265,7 +260,7 @@ exports.check = async function (req, res) {
  * API Name : 닉네임 수정 API
  * [PATCH] /users/nickname
  */
- exports.updateNickname = async function (req, res) {
+exports.updateNickname = async function (req, res) {
 
     try {
         const nickName = req.body.nickName;
@@ -334,7 +329,7 @@ exports.updateProfileImg = async function (req, res) {
  * API Name : 로그아웃 API
  * [PATCH] /logout
  */
- exports.logout = async function (req, res) {
+exports.logout = async function (req, res) {
 
     try {
         try {
@@ -368,7 +363,7 @@ exports.updateProfileImg = async function (req, res) {
  * API Name : 회원탈퇴 API
  * [DELETE] /users
  */
- exports.deleteUser = async function (req, res) {
+exports.deleteUser = async function (req, res) {
 
     try {
         try {
@@ -397,7 +392,7 @@ exports.updateProfileImg = async function (req, res) {
     }
 };
 
-schedule.scheduleJob('0 0 3 1 * *', async function() {
+schedule.scheduleJob('0 0 3 1 * *', async function () {
     console.log('schedule: ' + new Date());
     const connection = await pool.getConnection(async (conn) => conn);
     const deleteBlacklistRows = await userDao.deleteBlacklist(connection);

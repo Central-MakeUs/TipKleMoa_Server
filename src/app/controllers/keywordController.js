@@ -9,7 +9,7 @@ const keywordDao = require('../dao/keywordDao');
  * API Name : 알림 키워드 등록 API
  * [POST] /keywords
  */
- exports.insertKeyword = async function (req, res) {
+exports.insertKeyword = async function (req, res) {
     try {
         try {
             const userId = req.verifiedToken.userId;

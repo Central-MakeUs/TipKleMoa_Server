@@ -1,4 +1,4 @@
-module.exports = function(app){
+module.exports = function (app) {
     const search = require('../controllers/searchController');
     const jwtMiddleware = require('../../../config/jwtMiddleware');
 

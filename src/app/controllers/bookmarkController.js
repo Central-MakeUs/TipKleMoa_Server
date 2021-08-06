@@ -16,7 +16,7 @@ exports.getBookmarks = async function (req, res) {
             const userId = req.verifiedToken.userId;
             const connection = await pool.getConnection(async (conn) => conn);
             let folderRows = await bookmarkDao.getFolders(connection, userId);
-            for(let i=0; i<folderRows.length; i++) {
+            for (let i = 0; i < folderRows.length; i++) {
                 let postRows = await bookmarkDao.getFolderPostsPreview(connection, folderRows[i].folderId);
                 folderRows[i].postsInfo = postRows;
             }
@@ -48,8 +48,8 @@ exports.addFolder = async function (req, res) {
         try {
             const userId = req.verifiedToken.userId;
             const connection = await pool.getConnection(async (conn) => conn);
-            const { folderName } = req.body;
-            if(!folderName){
+            const {folderName} = req.body;
+            if (!folderName) {
                 return res.json({
                     isSuccess: false,
                     code: 2035,
@@ -86,15 +86,15 @@ exports.addPostToFolder = async function (req, res) {
         try {
             const userId = req.verifiedToken.userId;
             const folderId = req.params.folderId;
-            const { postId } = req.body;
-            if(!folderId){
+            const {postId} = req.body;
+            if (!folderId) {
                 return res.json({
                     isSuccess: false,
                     code: 2036,
                     message: "folderId를 입력해주세요."
                 });
             }
-            if(!postId){
+            if (!postId) {
                 return res.json({
                     isSuccess: false,
                     code: 2037,
@@ -113,7 +113,7 @@ exports.addPostToFolder = async function (req, res) {
                 })
             }
             const folderRows = await bookmarkDao.checkFolderExists(connection, folderId, userId);
-            if(folderRows.length === 0){
+            if (folderRows.length === 0) {
                 connection.release();
                 return res.json({
                     isSuccess: false,
@@ -122,7 +122,7 @@ exports.addPostToFolder = async function (req, res) {
                 })
             }
             const folderPostRows = await bookmarkDao.checkFolderPostExists(connection, userId, postId);
-            if(folderPostRows.length > 0){
+            if (folderPostRows.length > 0) {
                 connection.release();
                 return res.json({
                     isSuccess: false,
@@ -189,7 +189,7 @@ exports.deletePostFromFolder = async function (req, res) {
         try {
             const userId = req.verifiedToken.userId;
             const postId = req.params.postId;
-            if(!postId){
+            if (!postId) {
                 return res.json({
                     isSuccess: false,
                     code: 2037,
@@ -207,7 +207,7 @@ exports.deletePostFromFolder = async function (req, res) {
                 })
             }
             const folderPostRows = await bookmarkDao.checkFolderPostExists(connection, userId, postId);
-            if(folderPostRows.length === 0){
+            if (folderPostRows.length === 0) {
                 connection.release();
                 return res.json({
                     isSuccess: false,
@@ -244,7 +244,7 @@ exports.deleteFolder = async function (req, res) {
         try {
             const userId = req.verifiedToken.userId;
             const folderId = req.params.folderId;
-            if(!folderId){
+            if (!folderId) {
                 return res.json({
                     isSuccess: false,
                     code: 2036,
@@ -253,7 +253,7 @@ exports.deleteFolder = async function (req, res) {
             }
             const connection = await pool.getConnection(async (conn) => conn);
             const folderRows = await bookmarkDao.checkFolderExists(connection, folderId, userId);
-            if(folderRows.length === 0){
+            if (folderRows.length === 0) {
                 connection.release();
                 return res.json({
                     isSuccess: false,
@@ -285,16 +285,16 @@ exports.deleteFolder = async function (req, res) {
 };
 
 /**
-* API No. 18
-* API Name : 폴더 게사글 목록 조회 API
-* [GET] /folders/:folderId/posts
-*/
+ * API No. 18
+ * API Name : 폴더 게사글 목록 조회 API
+ * [GET] /folders/:folderId/posts
+ */
 exports.getFolderPosts = async function (req, res) {
     try {
         try {
             const userId = req.verifiedToken.userId;
             const folderId = req.params.folderId;
-            if(!folderId){
+            if (!folderId) {
                 return res.json({
                     isSuccess: false,
                     code: 2036,
@@ -303,7 +303,7 @@ exports.getFolderPosts = async function (req, res) {
             }
             const connection = await pool.getConnection(async (conn) => conn);
             const folderRows = await bookmarkDao.checkFolderExists(connection, folderId, userId);
-            if(folderRows.length === 0){
+            if (folderRows.length === 0) {
                 connection.release();
                 return res.json({
                     isSuccess: false,
@@ -314,15 +314,15 @@ exports.getFolderPosts = async function (req, res) {
 
             const postRows = await bookmarkDao.getFolderPosts(connection, folderId);
             const result = {
-                folderName : folderRows[0].folderName,
-                post : postRows
+                folderName: folderRows[0].folderName,
+                post: postRows
             };
             connection.release();
             return res.json({
                 isSuccess: true,
                 code: 1000,
                 message: "폴더에 저장된 게시물 목록 조회 성공",
-                result : result
+                result: result
             });
         } catch (err) {
             connection.release();

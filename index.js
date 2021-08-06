@@ -9,5 +9,5 @@ express().listen(port);
 logger.info(`${process.env.NODE_ENV} - API Server Start At Port ${port}`);
 
 admin.initializeApp({
-  credential: admin.credential.cert(serAccount),
+    credential: admin.credential.cert(serAccount),
 });

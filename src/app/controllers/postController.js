@@ -1,21 +1,16 @@
 const {pool} = require('../../../config/database');
 const {logger} = require('../../../config/winston');
-
-const userDao = require('../dao/userDao');
 const postDao = require('../dao/postDao');
 const categoryDao = require('../dao/categoryDao');
 const searchDao = require('../dao/searchDao');
 const pointDao = require('../dao/pointDao');
 const bookmarkDao = require('../dao/bookmarkDao');
 const keywordDao = require('../dao/keywordDao');
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
-const secret_config = require('../../../config/secret');
 const notification = require('../utils/notification');
 const slack = require('../utils/slack_report');
 
 const regUrlType = /(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
-
+const checkNumValid = /^([1-9])+([0-9])*$/;
 
 /**
  * API No.6
@@ -143,7 +138,6 @@ exports.getPosts = async function (req, res) {
                 })
             }
 
-            const checkNumValid = /^([1-9])+([0-9])*$/;
             if(!checkNumValid.test(page) || !checkNumValid.test(limit)){
                 return res.json({
                     isSuccess: false,
@@ -154,7 +148,7 @@ exports.getPosts = async function (req, res) {
 
             const connection = await pool.getConnection(async (conn) => conn);
             if (search) {
-                const searchRows = await postDao.searchPosts(connection, search, userId, order, Number(limit)*(Number(page)-1), Number(limit));
+                const searchRows = await postDao.searchPosts(connection, search, userId, order, Number(limit) * (Number(page) - 1), Number(limit));
                 for(let i=0; i<searchRows.length; i++){
                     const imgRows = await postDao.getPostImages(connection, searchRows[i].postId)
                     const imgList = [];

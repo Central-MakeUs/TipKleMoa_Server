@@ -1,5 +1,3 @@
-const {pool} = require("../../../config/database");
-
 // 북마크 폴더 조회
 async function getFolders(connection, userId) {
     const query = `
@@ -140,7 +138,7 @@ async function deletePostsFromAllFolder(connection, postId) {
     return rows;
 }
 
-async function deleteFolder(connection, folderId){
+async function deleteFolder(connection, folderId) {
     const query = `
         delete
         from Folder
